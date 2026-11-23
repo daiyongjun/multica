@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { CircleUser, ListTodo, Plus } from "@multica/ui/icons";
 import { Button } from "@multica/ui/components/ui/button";
+import { Input } from "@multica/ui/components/ui/input";
 import { useAuthStore } from "@multica/core/auth";
 import { myIssuesRelationFromScope } from "@multica/core/issues/stores/my-issues-view-store";
 import { CollectionPageState } from "../../layout/collection-page";
@@ -18,6 +20,9 @@ export function MyIssuesPage() {
   const { t: tIssues } = useT("issues");
   const user = useAuthStore((s) => s.user);
   const scope = useMyIssuesScope();
+  const [search, setSearch] = useState("");
+  const hasSearch = Boolean(search.trim());
+  const searchLabel = tIssues(($) => $.table.search_placeholder);
 
   return (
     <div className="flex flex-1 min-h-0 flex-col">
@@ -29,15 +34,33 @@ export function MyIssuesPage() {
             relation: myIssuesRelationFromScope(scope),
           }}
           modes={["board", "list", "table", "swimlane"]}
+          search={search}
           batchToolbar="list"
-          renderHeader={({ controller }) => <IssueViewHeader controller={controller} base={MY_BASE} />}
+          renderHeader={({ controller }) => (
+            <IssueViewHeader
+              controller={controller}
+              base={MY_BASE}
+              afterTitle={
+                controller.viewMode !== "table" && (
+                  <Input
+                    type="search"
+                    className="w-40 min-w-16 sm:w-52"
+                    aria-label={searchLabel}
+                    placeholder={searchLabel}
+                    value={search}
+                    onChange={(event) => setSearch(event.currentTarget.value)}
+                  />
+                )
+              }
+            />
+          )}
           renderEmpty={({ controller, canCreate }) => (
             <CollectionPageState
               icon={CircleUser}
-              title={t(($) => $.page.empty_title)}
-              description={t(($) => $.page.empty_description)}
+              title={hasSearch ? tIssues(($) => $.table.empty) : t(($) => $.page.empty_title)}
+              description={hasSearch ? undefined : t(($) => $.page.empty_description)}
               actions={
-                canCreate && (
+                !hasSearch && canCreate && (
                   <Button size="sm" onClick={() => controller.openCreateIssue()}>
                     <Plus aria-hidden="true" />
                     {tIssues(($) => $.views.new_issue)}

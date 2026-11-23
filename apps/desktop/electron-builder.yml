@@ -41,6 +41,7 @@ asarUnpack:
 beforePack: ./scripts/mac-update-floor.cjs
 afterSign: ./scripts/verify-mac-release.mjs
 mac:
+  icon: build/workstack.icns
   # Electron 44 requires macOS 13 Ventura; declare it on every mac bundle.
   minimumSystemVersion: "13.0.0"
   entitlementsInherit: build/entitlements.mac.plist
