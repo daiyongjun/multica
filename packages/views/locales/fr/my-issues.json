@@ -1,5 +1,6 @@
 {
   "page": {
+    "search": "Rechercher par titre ou identifiant",
     "breadcrumb": "Mes tâches",
     "workspace_fallback": "Espace de travail",
     "empty_title": "Aucune tâche pour l'instant",

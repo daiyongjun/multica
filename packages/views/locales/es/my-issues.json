@@ -1,5 +1,6 @@
 {
   "page": {
+    "search": "Buscar por título o identificador",
     "breadcrumb": "Mis tareas",
     "workspace_fallback": "Espacio de trabajo",
     "empty_title": "Aún no hay tareas",

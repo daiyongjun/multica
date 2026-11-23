@@ -1,5 +1,6 @@
 {
   "page": {
+    "search": "Поиск по названию или номеру",
     "breadcrumb": "Мои задачи",
     "workspace_fallback": "Рабочее пространство",
     "empty_title": "Задач пока нет",

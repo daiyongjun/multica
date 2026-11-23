@@ -1,5 +1,6 @@
 {
   "page": {
+    "search": "按標題或編號搜尋",
     "breadcrumb": "我的任務",
     "workspace_fallback": "工作區",
     "empty_title": "暫無任務",

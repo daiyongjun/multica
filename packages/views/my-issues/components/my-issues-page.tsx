@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import { Input } from "@multica/ui/components/ui/input";
 import { CircleUser, ListTodo, Plus } from "@multica/ui/icons";
 import { Button } from "@multica/ui/components/ui/button";
 import { useAuthStore } from "@multica/core/auth";
@@ -18,6 +20,7 @@ export function MyIssuesPage() {
   const { t: tIssues } = useT("issues");
   const user = useAuthStore((s) => s.user);
   const scope = useMyIssuesScope();
+  const [search, setSearch] = useState("");
 
   return (
     <div className="flex flex-1 min-h-0 flex-col">
@@ -30,7 +33,24 @@ export function MyIssuesPage() {
           }}
           modes={["board", "list", "table", "swimlane"]}
           batchToolbar="list"
-          renderHeader={({ controller }) => <IssueViewHeader controller={controller} base={MY_BASE} />}
+          search={search}
+          renderHeader={({ controller }) => (
+            <>
+              <IssueViewHeader controller={controller} base={MY_BASE} />
+              {controller.viewMode !== "table" && (
+                <div className="px-4 py-2">
+                  <Input
+                    type="search"
+                    aria-label={t(($) => $.page.search)}
+                    placeholder={t(($) => $.page.search)}
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                    className="max-w-sm"
+                  />
+                </div>
+              )}
+            </>
+          )}
           renderEmpty={({ controller, canCreate }) => (
             <CollectionPageState
               icon={CircleUser}

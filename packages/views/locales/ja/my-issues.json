@@ -1,5 +1,6 @@
 {
   "page": {
+    "search": "タイトルまたは番号で検索",
     "breadcrumb": "マイタスク",
     "workspace_fallback": "ワークスペース",
     "empty_title": "タスクはまだありません",

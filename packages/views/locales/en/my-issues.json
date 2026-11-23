@@ -1,5 +1,6 @@
 {
   "page": {
+    "search": "Search by title or identifier",
     "breadcrumb": "My issues",
     "workspace_fallback": "Workspace",
     "empty_title": "No issues yet",

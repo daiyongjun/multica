@@ -1,4 +1,4 @@
-import { cleanup, screen, within } from "@testing-library/react";
+import { fireEvent, cleanup, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderWithI18n } from "../test/i18n";
 import { IssuesPage } from "../issues/components/issues-page";
@@ -23,8 +23,8 @@ vi.mock("../my-issues/use-my-issues-scope", () => ({
   useMyIssuesScope: () => "all",
 }));
 vi.mock("../issues/surface/issue-surface", () => ({
-  IssueSurface: ({ renderHeader }: { renderHeader: (context: object) => React.ReactNode }) => (
-    <>{renderHeader({ controller: { isRefreshing: state.refreshing, surfaceIssues: [] } })}</>
+  IssueSurface: ({ renderHeader, search }: { search?: string; renderHeader: (context: object) => React.ReactNode }) => (
+    <><output data-testid="surface-search">{search}</output>{renderHeader({ controller: { isRefreshing: state.refreshing, surfaceIssues: [] } })}</>
   ),
 }));
 vi.mock("../chat/use-start-chat-with-draft", () => ({
@@ -61,6 +61,15 @@ describe("issue page refresh feedback", () => {
     rerender(<Page />);
     expect(within(header).getByRole("status")).toBeInTheDocument();
     expect(screen.getAllByRole("banner")).toHaveLength(1);
+  });
+
+  it("passes title and identifier searches to the server-owned surface and clears them", () => {
+    renderWithI18n(<MyIssuesPage />);
+    const search = screen.getByRole("searchbox");
+    fireEvent.change(search, { target: { value: "DEV-1" } });
+    expect(screen.getByTestId("surface-search")).toHaveTextContent("DEV-1");
+    fireEvent.change(search, { target: { value: "" } });
+    expect(screen.getByTestId("surface-search")).toBeEmptyDOMElement();
   });
 
   it("keeps the My Issues title visible before the user is available", () => {

@@ -1,5 +1,6 @@
 {
   "page": {
+    "search": "제목 또는 번호로 검색",
     "breadcrumb": "내 태스크",
     "workspace_fallback": "워크스페이스",
     "empty_title": "아직 태스크가 없습니다",
