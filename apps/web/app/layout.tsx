@@ -96,20 +96,20 @@ export const metadata: Metadata = {
   description:
     "Source-available platform that turns coding agents into real teammates. Assign tasks, track progress, compound skills.",
   icons: {
-    icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
-    shortcut: ["/favicon.svg"],
+    icon: [{ url: "/workstack.svg", type: "image/svg+xml" }],
+    shortcut: ["/workstack.svg"],
     // iOS never reads the manifest's icons for the home screen; it needs its
     // own opaque, full-bleed square and rounds the corners itself.
-    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180" }],
+    apple: [{ url: "/workstack.svg", type: "image/svg+xml" }],
   },
   // Home-screen behaviour: launch without browser chrome, and label the icon
-  // "Multica" rather than the long SEO <title>. `capable` renders the
+  // "个人工作栈" rather than the long SEO <title>. `capable` renders the
   // standardised `mobile-web-app-capable` tag — Next 16 no longer emits the
   // deprecated apple-prefixed spelling, so iOS standalone rides on the
   // manifest's `display` instead (honoured since iOS 16.4).
   appleWebApp: {
     capable: true,
-    title: "Multica",
+    title: "个人工作栈",
     // `default` keeps the web view below the status bar, which iOS paints in
     // the theme colour with legible text. `black-translucent` would put the
     // page under it too, but always draws the status text white, unreadable
@@ -118,7 +118,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: "website",
-    siteName: "Multica",
+    siteName: "个人工作栈",
     locale: "en_US",
   },
   twitter: {

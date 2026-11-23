@@ -1,5 +1,5 @@
 appId: ai.multica.desktop
-productName: Multica
+productName: 个人工作栈
 directories:
   buildResources: build
 files:
@@ -46,7 +46,7 @@ mac:
   entitlementsInherit: build/entitlements.mac.plist
   extendInfo:
     # Shown in the macOS prompt the first time voice input opens the mic.
-    NSMicrophoneUsageDescription: Multica uses the microphone for voice input when you dictate into chat or comments.
+    NSMicrophoneUsageDescription: 个人工作栈 uses the microphone for voice input when you dictate into chat or comments.
   target:
     - dmg
     - zip

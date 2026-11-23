@@ -14,7 +14,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@multica/ui/components/ui/dropdown-menu";
-import { STAR_STROKE, starPath } from "@multica/ui/lib/multica-brand";
+import { MulticaIcon } from "@multica/ui/components/common/multica-icon";
 import { cn } from "@multica/ui/lib/utils";
 import { ActionShortcutKeycaps } from "../../common/shortcut-keycaps";
 import { useT } from "../../i18n";
@@ -23,15 +23,8 @@ import { ChatBarHistory } from "./chat-bar-history";
 import { chatActivity, selectChatBarSessions, type ChatBarSession } from "./chat-bar-sessions";
 
 const EMPTY_SESSIONS: ChatSession[] = [];
-const STAR = starPath(STAR_STROKE);
-
-/** The star from the Multica mark, in the text colour. */
 function MulticaStar() {
-  return (
-    <svg aria-hidden viewBox="0 0 100 100" fill="currentColor">
-      <path d={STAR} />
-    </svg>
-  );
+  return <MulticaIcon />;
 }
 const DEFAULT_MAX_CHIPS = 3;
 

@@ -67,9 +67,9 @@
   },
   "star_prompt": {
     "title_other": "{{agent}} がタスクを {{count}} 件完了しました",
-    "body": "Multica がお役に立っていたら、GitHub でスターをお願いします。ほかのチームが Multica を見つけやすくなります。",
+    "body": "个人工作栈 がお役に立っていたら、GitHub でスターをお願いします。ほかのチームが 个人工作栈 を見つけやすくなります。",
     "star": "Star",
-    "star_label": "GitHub で Multica にスターする",
+    "star_label": "GitHub で 个人工作栈 にスターする",
     "later": "あとで",
     "close": "閉じる"
   },
