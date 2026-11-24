@@ -1556,6 +1556,50 @@ func TestCodexDesktopAppBundlePaths_IncludesChatGPTAndLegacy(t *testing.T) {
 	}
 }
 
+func TestCodexDesktopBundlePathsFor_WindowsIncludesLocalAppDataAndProgramFiles(t *testing.T) {
+	env := map[string]string{
+		"LOCALAPPDATA": `C:\Users\alice\AppData\Local`,
+		"ProgramFiles": `C:\Program Files`,
+	}
+	paths := codexDesktopBundlePathsFor("windows", func(k string) string { return env[k] }, `C:\Users\alice`)
+	wantFirst := filepath.Join(`C:\Users\alice\AppData\Local`, "Programs", "OpenAI", "Codex", "bin", "codex.exe")
+	if len(paths) == 0 || paths[0] != wantFirst {
+		t.Fatalf("first Windows codex bundle path = %q, want %q (all=%#v)", func() string {
+			if len(paths) == 0 {
+				return ""
+			}
+			return paths[0]
+		}(), wantFirst, paths)
+	}
+	wantPF := filepath.Join(`C:\Program Files`, "OpenAI", "Codex", "bin", "codex.exe")
+	foundPF := false
+	for _, p := range paths {
+		if p == wantPF {
+			foundPF = true
+			break
+		}
+	}
+	if !foundPF {
+		t.Fatalf("Windows codex bundle paths missing ProgramFiles entry %q: %#v", wantPF, paths)
+	}
+}
+
+func TestExpandLeadingTilde(t *testing.T) {
+	home, err := os.UserHomeDir()
+	if err != nil || home == "" {
+		t.Skip("no user home dir")
+	}
+	if got := expandLeadingTilde("~/bin/codex"); got != filepath.Join(home, "bin/codex") {
+		t.Fatalf("expandLeadingTilde(~/bin/codex) = %q", got)
+	}
+	if got := expandLeadingTilde(`~\AppData\Local\codex.exe`); got != filepath.Join(home, `AppData\Local\codex.exe`) {
+		t.Fatalf("expandLeadingTilde(~\\...) = %q", got)
+	}
+	if got := expandLeadingTilde("codex"); got != "codex" {
+		t.Fatalf("expandLeadingTilde(codex) = %q, want codex", got)
+	}
+}
+
 func TestLoadConfig_CodexDesktopFallbackDoesNotOverrideExplicitPath(t *testing.T) {
 	pathDir := t.TempDir()
 	fakeCodex := filepath.Join(pathDir, "Codex.app", "Contents", "Resources", "codex")

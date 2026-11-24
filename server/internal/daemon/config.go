@@ -831,7 +831,25 @@ func shellArgsFromEnv(name string) ([]string, error) {
 // When ~/.multica/hooks shadows a real agent binary, skip that hooks directory:
 // previously generated hook wrappers can execute the same command name and
 // recurse forever if the daemon records or launches the wrapper.
+func expandLeadingTilde(cmd string) string {
+	if cmd == "" || cmd[0] != '~' {
+		return cmd
+	}
+	if len(cmd) > 1 && cmd[1] != '/' && cmd[1] != '\\' {
+		return cmd
+	}
+	home, err := os.UserHomeDir()
+	if err != nil || home == "" {
+		return cmd
+	}
+	if len(cmd) == 1 {
+		return home
+	}
+	return filepath.Join(home, cmd[2:])
+}
+
 func resolveAgentExecutablePath(cmd string) (string, error) {
+	cmd = expandLeadingTilde(cmd)
 	resolved, err := exec.LookPath(cmd)
 	if err != nil {
 		return "", err
@@ -883,6 +901,13 @@ func reresolveAgentCommand(cmd string) (string, bool) {
 	if !strings.ContainsAny(cmd, "/\\") {
 		if path, ok := resolveAgentsViaLoginShell([]string{cmd})[cmd]; ok {
 			return path, true
+		}
+		if cmd == "codex" {
+			for _, p := range codexDesktopAppBundlePaths() {
+				if executableCandidate(p) {
+					return p, true
+				}
+			}
 		}
 	}
 	return "", false
@@ -991,26 +1016,54 @@ var zcodeDesktopAppBundlePaths = func() []string {
 	return paths
 }
 
-// codexDesktopAppBundlePaths returns candidate macOS app-bundle locations for
-// the bundled Codex CLI. OpenAI relocated the Desktop app from Codex.app to
-// ChatGPT.app (#5205), then nested the CLI under Resources/codex-cli/bin
-// (#8941). Candidates are ordered by install location first (system
-// /Applications before user ~/Applications). Within each location the current
-// ChatGPT.app nested path is tried before the flat Resources/codex path, which
-// is tried before the legacy Codex.app path, so the newest install wins while
-// older installs still resolve.
+// codexDesktopAppBundlePaths returns candidate desktop-app locations for the
+// bundled Codex CLI across macOS and Windows.
+// On macOS, OpenAI relocated the Desktop app from Codex.app to ChatGPT.app
+// (#5205), then nested the CLI under Resources/codex-cli/bin (#8941).
+// On Windows, Codex Desktop installs codex.exe under %LOCALAPPDATA%\Programs\
+// OpenAI\Codex\bin\codex.exe (or %ProgramFiles%\OpenAI\Codex\...).
 var codexDesktopAppBundlePaths = func() []string {
-	paths := []string{
-		"/Applications/ChatGPT.app/Contents/Resources/codex-cli/bin/codex",
-		"/Applications/ChatGPT.app/Contents/Resources/codex",
-		"/Applications/Codex.app/Contents/Resources/codex",
+	home, err := os.UserHomeDir()
+	if err != nil {
+		home = ""
 	}
-	if home, err := os.UserHomeDir(); err == nil {
-		paths = append(paths,
-			filepath.Join(home, "Applications", "ChatGPT.app", "Contents", "Resources", "codex-cli", "bin", "codex"),
-			filepath.Join(home, "Applications", "ChatGPT.app", "Contents", "Resources", "codex"),
-			filepath.Join(home, "Applications", "Codex.app", "Contents", "Resources", "codex"),
-		)
+	return codexDesktopBundlePathsFor(runtime.GOOS, os.Getenv, home)
+}
+
+func codexDesktopBundlePathsFor(goos string, env func(string) string, home string) []string {
+	var paths []string
+	seen := make(map[string]struct{})
+	add := func(p string) {
+		if p == "" {
+			return
+		}
+		if _, ok := seen[p]; ok {
+			return
+		}
+		seen[p] = struct{}{}
+		paths = append(paths, p)
+	}
+	if goos == "windows" {
+		if localAppData := strings.TrimSpace(env("LOCALAPPDATA")); localAppData != "" {
+			add(filepath.Join(localAppData, "Programs", "OpenAI", "Codex", "bin", "codex.exe"))
+			add(filepath.Join(localAppData, "Programs", "OpenAI", "Codex", "codex.exe"))
+		}
+		if home != "" {
+			add(filepath.Join(home, "AppData", "Local", "Programs", "OpenAI", "Codex", "bin", "codex.exe"))
+			add(filepath.Join(home, "AppData", "Local", "Programs", "OpenAI", "Codex", "codex.exe"))
+		}
+		if programFiles := strings.TrimSpace(env("ProgramFiles")); programFiles != "" {
+			add(filepath.Join(programFiles, "OpenAI", "Codex", "bin", "codex.exe"))
+			add(filepath.Join(programFiles, "OpenAI", "Codex", "codex.exe"))
+		}
+	}
+	add("/Applications/ChatGPT.app/Contents/Resources/codex-cli/bin/codex")
+	add("/Applications/ChatGPT.app/Contents/Resources/codex")
+	add("/Applications/Codex.app/Contents/Resources/codex")
+	if home != "" {
+		add(filepath.Join(home, "Applications", "ChatGPT.app", "Contents", "Resources", "codex-cli", "bin", "codex"))
+		add(filepath.Join(home, "Applications", "ChatGPT.app", "Contents", "Resources", "codex"))
+		add(filepath.Join(home, "Applications", "Codex.app", "Contents", "Resources", "codex"))
 	}
 	return paths
 }

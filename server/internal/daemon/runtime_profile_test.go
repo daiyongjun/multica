@@ -3,12 +3,17 @@ package daemon
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/multica-ai/multica/server/pkg/agent"
 )
 
 // stubLookPath swaps the package-level lookPath indirection used by
@@ -544,5 +549,180 @@ func TestRegisterRuntimes_ProfileCompatibilityTarget(t *testing.T) {
 				t.Fatalf("lost custom command: %+v", spec)
 			}
 		})
+	}
+}
+
+func TestRegisterRuntimes_CustomCodexFallsBackWhenPathBinaryBroken(t *testing.T) {
+	bundleDir := t.TempDir()
+	healthyCodex := filepath.Join(bundleDir, "codex")
+	if err := os.WriteFile(healthyCodex, []byte("#!/bin/sh\necho 'codex-cli 0.171.0'\n"), 0o755); err != nil {
+		t.Fatalf("write healthy codex: %v", err)
+	}
+
+	stubLookPath(t, map[string]string{"codex": "/opt/homebrew/bin/codex"})
+	origBundles := codexDesktopAppBundlePaths
+	codexDesktopAppBundlePaths = func() []string { return []string{healthyCodex} }
+	t.Cleanup(func() { codexDesktopAppBundlePaths = origBundles })
+
+	origDetect := detectAgentVersion
+	detectAgentVersion = func(_ context.Context, cmd agent.Command) (string, error) {
+		if cmd.Path == "/opt/homebrew/bin/codex" {
+			return "", errors.New("exit status 1: missing optional dependency @openai/codex-darwin-arm64")
+		}
+		if cmd.Path == healthyCodex {
+			return "0.171.0", nil
+		}
+		return "", errors.New("unexpected path: " + cmd.Path)
+	}
+	t.Cleanup(func() { detectAgentVersion = origDetect })
+
+	profiles := []RuntimeProfile{{
+		ID:             "prof-codex",
+		WorkspaceID:    "ws-1",
+		DisplayName:    "Codex",
+		ProtocolFamily: "codex",
+		RuntimeType:    "codex",
+		CommandName:    "codex",
+		Enabled:        true,
+	}}
+	fx := newProfileRegisterFixture(t, profiles, http.StatusOK)
+	fx.daemon.cfg.Agents = map[string]AgentEntry{}
+
+	if _, _, _, err := fx.daemon.registerRuntimesForWorkspaceLocked(context.Background(), "ws-1"); err != nil {
+		t.Fatalf("registerRuntimesForWorkspaceLocked: %v", err)
+	}
+	if len(fx.sentRuntimes) != 1 {
+		t.Fatalf("sent runtimes = %+v, want 1", fx.sentRuntimes)
+	}
+	if fx.sentRuntimes[0]["version"] != "0.171.0" {
+		t.Fatalf("sent version = %v, want 0.171.0", fx.sentRuntimes[0]["version"])
+	}
+	spec := fx.daemon.profileLaunchSpecs["prof-codex"]
+	if spec.path != healthyCodex {
+		t.Fatalf("profileLaunchSpecs[prof-codex].path = %q, want %q", spec.path, healthyCodex)
+	}
+	if spec.commandName != "codex" {
+		t.Fatalf("profileLaunchSpecs[prof-codex].commandName = %q, want codex", spec.commandName)
+	}
+}
+
+func TestRegisterRuntimes_CustomCodexSkipsBrokenWhenNoHealthyFallback(t *testing.T) {
+	stubLookPath(t, map[string]string{"codex": "/opt/homebrew/bin/codex"})
+	origBundles := codexDesktopAppBundlePaths
+	codexDesktopAppBundlePaths = func() []string { return nil }
+	t.Cleanup(func() { codexDesktopAppBundlePaths = origBundles })
+
+	origDetect := detectAgentVersion
+	detectAgentVersion = func(_ context.Context, cmd agent.Command) (string, error) {
+		return "", errors.New("exit status 1: spawn codex ENOENT")
+	}
+	t.Cleanup(func() { detectAgentVersion = origDetect })
+
+	profiles := []RuntimeProfile{{
+		ID:             "prof-codex-broken",
+		WorkspaceID:    "ws-1",
+		DisplayName:    "Codex",
+		ProtocolFamily: "codex",
+		RuntimeType:    "codex",
+		CommandName:    "codex",
+		Enabled:        true,
+	}}
+	fx := newProfileRegisterFixture(t, profiles, http.StatusOK)
+	fx.daemon.cfg.Agents = map[string]AgentEntry{}
+
+	if _, _, _, err := fx.daemon.registerRuntimesForWorkspaceLocked(context.Background(), "ws-1"); err != nil {
+		t.Fatalf("registerRuntimesForWorkspaceLocked: %v", err)
+	}
+	if len(fx.sentRuntimes) != 0 {
+		t.Fatalf("broken codex must not register as online, got %+v", fx.sentRuntimes)
+	}
+	if len(fx.sentFailures) != 1 || fx.sentFailures[0]["profile_id"] != "prof-codex-broken" {
+		t.Fatalf("expected failed_profiles entry for broken codex, got %+v", fx.sentFailures)
+	}
+}
+
+func TestResolveCustomProfileLaunchForRuntime_HealsVanishedPath(t *testing.T) {
+	bundleDir := t.TempDir()
+	healthyCodex := filepath.Join(bundleDir, "codex")
+	if err := os.WriteFile(healthyCodex, []byte("#!/bin/sh\necho 'codex-cli 0.171.0'\n"), 0o755); err != nil {
+		t.Fatalf("write healthy codex: %v", err)
+	}
+
+	stubLookPath(t, map[string]string{})
+	origBundles := codexDesktopAppBundlePaths
+	codexDesktopAppBundlePaths = func() []string { return []string{healthyCodex} }
+	t.Cleanup(func() { codexDesktopAppBundlePaths = origBundles })
+
+	origDetect := detectAgentVersion
+	detectAgentVersion = func(_ context.Context, cmd agent.Command) (string, error) {
+		if cmd.Path == healthyCodex {
+			return "0.171.0", nil
+		}
+		return "", errors.New("unexpected path")
+	}
+	t.Cleanup(func() { detectAgentVersion = origDetect })
+
+	d := freshDaemon("")
+	d.runtimeIndex["rt-custom"] = Runtime{ID: "rt-custom", Provider: "codex", ProfileID: "prof-codex"}
+	d.profileLaunchSpecs = map[string]profileLaunchSpec{
+		"prof-codex": {
+			path:        filepath.Join(t.TempDir(), "deleted-codex"),
+			version:     "",
+			commandName: "codex",
+			runtimeType: "codex",
+		},
+	}
+
+	spec, ok := d.resolveCustomProfileLaunchForRuntime(context.Background(), "rt-custom")
+	if !ok {
+		t.Fatal("expected custom profile launch spec")
+	}
+	if spec.path != healthyCodex || spec.version != "0.171.0" {
+		t.Fatalf("healed spec = %+v, want path=%q version=0.171.0", spec, healthyCodex)
+	}
+	if got := d.profileLaunchSpecs["prof-codex"].path; got != healthyCodex {
+		t.Fatalf("cached spec path = %q, want %q", got, healthyCodex)
+	}
+}
+
+func TestProbeBuiltinRuntime_CodexFallsBackToDesktopBundleWhenPathBroken(t *testing.T) {
+	bundleDir := t.TempDir()
+	brokenCodex := filepath.Join(bundleDir, "broken-codex")
+	healthyCodex := filepath.Join(bundleDir, "healthy-codex")
+	for _, p := range []string{brokenCodex, healthyCodex} {
+		if err := os.WriteFile(p, []byte("#!/bin/sh\nexit 0\n"), 0o755); err != nil {
+			t.Fatalf("write %s: %v", p, err)
+		}
+	}
+
+	origBundles := codexDesktopAppBundlePaths
+	codexDesktopAppBundlePaths = func() []string { return []string{healthyCodex} }
+	t.Cleanup(func() { codexDesktopAppBundlePaths = origBundles })
+
+	origDetect := detectAgentVersion
+	origMin := checkAgentMinVersion
+	detectAgentVersion = func(_ context.Context, cmd agent.Command) (string, error) {
+		if cmd.Path == brokenCodex {
+			return "", errors.New("exit status 1")
+		}
+		if cmd.Path == healthyCodex {
+			return "0.171.0", nil
+		}
+		return "", errors.New("unexpected path")
+	}
+	checkAgentMinVersion = func(string, string) error { return nil }
+	t.Cleanup(func() {
+		detectAgentVersion = origDetect
+		checkAgentMinVersion = origMin
+	})
+
+	d := freshDaemon("")
+	res := d.probeBuiltinRuntime(context.Background(), "codex", AgentEntry{Path: brokenCodex, Command: "codex"})
+	if res.verdict != builtinProbeOK || res.version != "0.171.0" {
+		t.Fatalf("probeBuiltinRuntime = %+v, want OK 0.171.0", res)
+	}
+	resolved, ver := d.resolveAgentEntry(context.Background(), "codex", AgentEntry{Path: brokenCodex, Command: "codex"})
+	if resolved.Path != healthyCodex || ver != "0.171.0" {
+		t.Fatalf("resolved entry = (%q, %q), want (%q, 0.171.0)", resolved.Path, ver, healthyCodex)
 	}
 }

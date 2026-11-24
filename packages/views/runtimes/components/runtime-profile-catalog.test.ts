@@ -148,6 +148,47 @@ describe("parseCommandLine", () => {
       error: "trailing_escape",
     });
   });
+
+  it("preserves Windows executable paths without stripping backslashes", () => {
+    expect(
+      parseCommandLine(
+        "C:\\Users\\alice\\AppData\\Local\\Programs\\OpenAI\\Codex\\bin\\codex.exe --profile work",
+      ),
+    ).toEqual({
+      ok: true,
+      commandName:
+        "C:\\Users\\alice\\AppData\\Local\\Programs\\OpenAI\\Codex\\bin\\codex.exe",
+      fixedArgs: ["--profile", "work"],
+    });
+
+    expect(
+      parseCommandLine(
+        '"C:\\Program Files\\OpenAI\\Codex\\bin\\codex.exe" --model gpt-5.4',
+      ),
+    ).toEqual({
+      ok: true,
+      commandName: "C:\\Program Files\\OpenAI\\Codex\\bin\\codex.exe",
+      fixedArgs: ["--model", "gpt-5.4"],
+    });
+
+    expect(
+      parseCommandLine(
+        "~\\AppData\\Local\\Programs\\OpenAI\\Codex\\bin\\codex.exe",
+      ),
+    ).toEqual({
+      ok: true,
+      commandName: "~\\AppData\\Local\\Programs\\OpenAI\\Codex\\bin\\codex.exe",
+      fixedArgs: [],
+    });
+
+    expect(
+      parseCommandLine("\\\\fileserver\\tools\\codex\\codex.exe"),
+    ).toEqual({
+      ok: true,
+      commandName: "\\\\fileserver\\tools\\codex\\codex.exe",
+      fixedArgs: [],
+    });
+  });
 });
 
 describe("formatCommandLine", () => {
@@ -155,5 +196,17 @@ describe("formatCommandLine", () => {
     expect(formatCommandLine("agent", ["--flag", "a b c"])).toBe(
       'agent --flag "a b c"',
     );
+  });
+
+  it("round-trips Windows paths cleanly", () => {
+    const formatted = formatCommandLine(
+      "C:\\Program Files\\OpenAI\\Codex\\bin\\codex.exe",
+      ["--model", "gpt-5.4"],
+    );
+    expect(parseCommandLine(formatted)).toEqual({
+      ok: true,
+      commandName: "C:\\Program Files\\OpenAI\\Codex\\bin\\codex.exe",
+      fixedArgs: ["--model", "gpt-5.4"],
+    });
   });
 });

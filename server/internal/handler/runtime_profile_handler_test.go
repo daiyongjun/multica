@@ -384,6 +384,33 @@ func TestCreateRuntimeProfile_ForcesWorkspaceVisibility(t *testing.T) {
 	}
 }
 
+func TestValidateRuntimeProfileCommandName(t *testing.T) {
+	valid := []string{
+		"codex",
+		"/Applications/ChatGPT.app/Contents/Resources/codex-cli/bin/codex",
+		`C:\Users\alice\AppData\Local\Programs\OpenAI\Codex\bin\codex.exe`,
+		`C:\Program Files\OpenAI\Codex\bin\codex.exe`,
+		`~\AppData\Local\Programs\OpenAI\Codex\bin\codex.exe`,
+	}
+	for _, cmd := range valid {
+		if err := validateRuntimeProfileCommandName(cmd); err != nil {
+			t.Errorf("validateRuntimeProfileCommandName(%q) unexpected error: %v", cmd, err)
+		}
+	}
+	invalid := []string{
+		"",
+		"agent --model composer-2.5",
+		"codex\t--foo",
+		"codex\n--foo",
+		"bad\x00cmd",
+	}
+	for _, cmd := range invalid {
+		if err := validateRuntimeProfileCommandName(cmd); err == nil {
+			t.Errorf("validateRuntimeProfileCommandName(%q) expected error, got nil", cmd)
+		}
+	}
+}
+
 func TestCreateRuntimeProfile_ValidatesCommandAndFixedArgs(t *testing.T) {
 	if testHandler == nil {
 		t.Skip("database not available")

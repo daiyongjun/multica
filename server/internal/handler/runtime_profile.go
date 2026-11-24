@@ -109,7 +109,10 @@ func validateRuntimeProfileCommandName(commandName string) error {
 	if commandName == "" {
 		return errors.New("command_name is required")
 	}
-	if strings.ContainsAny(commandName, " \t\r\n") {
+	if strings.ContainsAny(commandName, "\t\r\n") {
+		return errors.New("command_name must be a single executable token; put arguments in fixed_args")
+	}
+	if strings.ContainsRune(commandName, ' ') && !strings.ContainsAny(commandName, "/\\") {
 		return errors.New("command_name must be a single executable token; put arguments in fixed_args")
 	}
 	if strings.ContainsRune(commandName, '\x00') {

@@ -801,9 +801,11 @@ type Daemon struct {
 }
 
 type profileLaunchSpec struct {
-	path      string
-	version   string
-	fixedArgs []string
+	path        string
+	version     string
+	fixedArgs   []string
+	commandName string
+	runtimeType string
 }
 
 // New creates a new Daemon instance.
@@ -2314,7 +2316,7 @@ func (d *Daemon) findRuntime(id string) *Runtime {
 // args resolved for a custom runtime profile. Called from
 // registerRuntimesForWorkspace. Lazily initializes the map so test fixtures
 // that build a Daemon literal without seeding every map don't panic.
-func (d *Daemon) recordProfileLaunch(profileID, path, version string, fixedArgs []string) {
+func (d *Daemon) recordProfileLaunch(profileID, runtimeType, commandName, path, version string, fixedArgs []string) {
 	if profileID == "" || path == "" {
 		return
 	}
@@ -2324,10 +2326,47 @@ func (d *Daemon) recordProfileLaunch(profileID, path, version string, fixedArgs 
 		d.profileLaunchSpecs = make(map[string]profileLaunchSpec)
 	}
 	d.profileLaunchSpecs[profileID] = profileLaunchSpec{
-		path:      path,
-		version:   version,
-		fixedArgs: append([]string(nil), fixedArgs...),
+		path:        path,
+		version:     version,
+		fixedArgs:   append([]string(nil), fixedArgs...),
+		commandName: commandName,
+		runtimeType: runtimeType,
 	}
+}
+
+// resolveCustomProfileLaunchForRuntime returns the launch spec for a custom
+// runtime, healing a vanished cached executable path when the profile carries
+// a command name to re-resolve (for example, after an in-place CLI reinstall
+// removes an old PATH symlink while a desktop bundle or new binary exists).
+func (d *Daemon) resolveCustomProfileLaunchForRuntime(ctx context.Context, runtimeID string) (profileLaunchSpec, bool) {
+	spec, ok := d.customProfileLaunchForRuntime(runtimeID)
+	if !ok {
+		return profileLaunchSpec{}, false
+	}
+	if spec.commandName == "" || agentExecutablePresent(spec.path) {
+		return spec, true
+	}
+	d.mu.Lock()
+	rt, hasRT := d.runtimeIndex[runtimeID]
+	d.mu.Unlock()
+	if !hasRT || rt.ProfileID == "" {
+		return spec, true
+	}
+	runtimeType := spec.runtimeType
+	if runtimeType == "" {
+		runtimeType = rt.Provider
+	}
+	resolved, version, _, found := d.resolveProfileCommand(ctx, "", rt.ProfileID, runtimeType, spec.commandName, spec.fixedArgs)
+	if !found || resolved == "" {
+		return spec, true
+	}
+	d.recordProfileLaunch(rt.ProfileID, runtimeType, spec.commandName, resolved, version, spec.fixedArgs)
+	d.logger.Info("healed custom runtime profile command path",
+		"runtime_id", runtimeID, "profile_id", rt.ProfileID, "command_name", spec.commandName,
+		"old_path", spec.path, "new_path", resolved, "version", version)
+	spec.path = resolved
+	spec.version = version
+	return spec, true
 }
 
 // customProfileLaunchForRuntime returns the resolved custom executable path and
@@ -2678,6 +2717,20 @@ probeLoop:
 		}
 		version, err := detectAgentVersion(ctx, agent.Command{Path: resolved.Path}.ForVersionProbe(name))
 		if err != nil {
+			if name == "codex" && entry.Command == "codex" && time.Since(startedAt) < runtimeVersionProbeRetryWindow {
+				for _, candidate := range codexDesktopAppBundlePaths() {
+					if candidate == "" || candidate == resolved.Path || !executableCandidate(candidate) {
+						continue
+					}
+					fallbackOutcome := d.adoptAgentPath(ctx, name, entry.Command, candidate, "fallback to Codex desktop bundle after version probe failure")
+					if fallbackOutcome.adopted.path != "" {
+						d.logger.Info("built-in codex fell back to desktop bundle executable",
+							"failed_path", resolved.Path, "fallback_path", fallbackOutcome.adopted.path,
+							"version", fallbackOutcome.adopted.version, "error", err)
+						return builtinProbeResult{version: fallbackOutcome.adopted.version, reason: "", verdict: builtinProbeOK}
+					}
+				}
+			}
 			lastErr = err
 			if time.Since(startedAt) >= runtimeVersionProbeRetryWindow {
 				break
@@ -3199,79 +3252,20 @@ func (d *Daemon) appendProfileRuntimes(ctx context.Context, workspaceID string, 
 			})
 			continue
 		}
-		// Resolve the executable to launch for this profile. A per-machine
-		// path override (MUL-3284, `multica runtime profile set-path`) wins
-		// over the PATH lookup when it is set AND points at a real
-		// executable — this is how an operator pins a profile to a binary
-		// that isn't on the daemon's PATH, or selects between multiple
-		// installs on the same host. A configured-but-unusable override
-		// (deleted/moved/non-executable) is logged and falls back to PATH
-		// and then to the matching provider command already discovered at
-		// daemon startup. The latter matters for GUI-launched daemons whose
-		// environment cannot resolve a CLI directly even though built-in
-		// discovery found it through a login shell or provider install path.
-		// When none of those sources resolves, the profile is skipped.
-		var resolved string
-		var failureReason string
-		if override := strings.TrimSpace(d.cfg.ProfileCommandOverrides[profile.ID]); override != "" {
-			if path, err := resolveProfileOverridePath(override); err == nil {
-				resolved = path
-				d.logger.Info("custom runtime profile: using per-machine command path override",
-					"workspace_id", workspaceID, "profile_id", profile.ID, "command_path", resolved)
-			} else {
-				failureReason = "Configured path override is not executable: " + override
-				d.logger.Warn("custom runtime profile: command path override not executable; falling back to PATH",
-					"workspace_id", workspaceID, "profile_id", profile.ID,
-					"override_path", override, "command_name", profile.CommandName)
-			}
-		}
-		if resolved == "" {
-			r, err := lookPath(profile.CommandName)
-			if err != nil {
-				if discovered, ok := d.agents()[runtimeType]; ok && discovered.Command == profile.CommandName && discovered.Path != "" {
-					resolved = discovered.Path
-					d.logger.Info("custom runtime profile: using discovered provider command path",
-						"workspace_id", workspaceID, "profile_id", profile.ID,
-						"protocol_family", profile.ProtocolFamily, "command_path", resolved)
-				} else {
-					// Host doesn't have this command — expected on hosts that aren't
-					// provisioned for this profile. Skip without failing.
-					d.logger.Info("skip custom runtime profile: command not found on PATH or provider discovery",
-						"workspace_id", workspaceID, "profile_id", profile.ID,
-						"command_name", profile.CommandName, "error", err)
-					if failureReason != "" {
-						failureReason += "; "
-					}
-					failureReason += "command not found on PATH or provider discovery: " + profile.CommandName
-					*failedProfiles = append(*failedProfiles, map[string]string{
-						"profile_id":   profile.ID,
-						"command_name": profile.CommandName,
-						"reason":       failureReason,
-					})
-					continue
-				}
-			} else {
-				resolved = r
-			}
-		}
-		// Best-effort version detection; an empty version is acceptable. The
-		// probe carries the profile's fixed_args so a wrapper reports the
-		// version of the CLI it execs rather than its own: `ccms start q36
-		// --version` is Claude Code's version, `ccms --version` is the
-		// wrapper's, and only the former means anything to the min-version
-		// gate (GH #7046).
-		version, verErr := detectAgentVersion(ctx, agent.NewCommand(resolved,
-			agent.FilterLaunchPrefix(runtimeType, profile.FixedArgs, d.logger)).ForVersionProbe(runtimeType))
-		if verErr != nil {
-			d.logger.Debug("custom runtime profile: version probe failed (registering with empty version)",
-				"workspace_id", workspaceID, "profile_id", profile.ID, "path", resolved, "error", verErr)
-			version = ""
+		resolved, version, failureReason, ok := d.resolveProfileCommand(ctx, workspaceID, profile.ID, runtimeType, profile.CommandName, profile.FixedArgs)
+		if !ok {
+			*failedProfiles = append(*failedProfiles, map[string]string{
+				"profile_id":   profile.ID,
+				"command_name": profile.CommandName,
+				"reason":       failureReason,
+			})
+			continue
 		}
 		displayName := profile.DisplayName
 		if d.cfg.DeviceName != "" {
 			displayName = fmt.Sprintf("%s (%s)", displayName, d.cfg.DeviceName)
 		}
-		d.recordProfileLaunch(profile.ID, resolved, version, profile.FixedArgs)
+		d.recordProfileLaunch(profile.ID, runtimeType, profile.CommandName, resolved, version, profile.FixedArgs)
 		d.logger.Info("registering custom runtime profile",
 			"workspace_id", workspaceID, "profile_id", profile.ID,
 			"protocol_family", profile.ProtocolFamily, "command_path", resolved)
@@ -3284,6 +3278,155 @@ func (d *Daemon) appendProfileRuntimes(ctx context.Context, workspaceID string, 
 		})
 	}
 	return profileSetSignature(resp.RuntimeProfiles)
+}
+
+func (d *Daemon) resolveProfileCommand(
+	ctx context.Context,
+	workspaceID, profileID, runtimeType, commandName string,
+	fixedArgs []string,
+) (string, string, string, bool) {
+	var (
+		failureReason string
+		primary       []string
+		fallbacks     []string
+		seen          = make(map[string]struct{})
+	)
+	addCandidate := func(dst *[]string, path string) {
+		path = strings.TrimSpace(path)
+		if path == "" {
+			return
+		}
+		if _, dup := seen[path]; dup {
+			return
+		}
+		seen[path] = struct{}{}
+		*dst = append(*dst, path)
+	}
+
+	if override := strings.TrimSpace(d.cfg.ProfileCommandOverrides[profileID]); override != "" {
+		if path, err := resolveProfileOverridePath(override); err == nil {
+			addCandidate(&primary, path)
+			d.logger.Info("custom runtime profile: using per-machine command path override",
+				"workspace_id", workspaceID, "profile_id", profileID, "command_path", path)
+		} else {
+			failureReason = "Configured path override is not executable: " + override
+			d.logger.Warn("custom runtime profile: command path override not executable; falling back to PATH",
+				"workspace_id", workspaceID, "profile_id", profileID,
+				"override_path", override, "command_name", commandName)
+		}
+	}
+
+	expandedCmd := expandLeadingTilde(commandName)
+	hasPathSep := strings.ContainsAny(expandedCmd, "/\\")
+	if len(primary) == 0 {
+		if r, err := lookPath(expandedCmd); err == nil {
+			if !hasPathSep && isInMulticaHooksDir(r) {
+				if unshadowed, uErr := lookPathExcludingMulticaHooks(expandedCmd); uErr == nil {
+					r = unshadowed
+				}
+			}
+			addCandidate(&primary, r)
+		} else if hasPathSep {
+			if r, oErr := resolveProfileOverridePath(expandedCmd); oErr == nil {
+				addCandidate(&primary, r)
+			}
+		}
+	}
+
+	collectFallbacks := func() {
+		if hasPathSep {
+			return
+		}
+		if discovered, ok := d.agents()[runtimeType]; ok && discovered.Command == commandName && discovered.Path != "" {
+			addCandidate(&fallbacks, discovered.Path)
+		}
+		if runtimeType == "codex" && commandName == "codex" {
+			for _, p := range codexDesktopAppBundlePaths() {
+				if executableCandidate(p) {
+					addCandidate(&fallbacks, p)
+				}
+			}
+		}
+		if runtimeType == "dsh" && commandName == "dsh" {
+			for _, p := range dshDesktopAppBundlePaths() {
+				if executableCandidate(p) {
+					addCandidate(&fallbacks, p)
+				}
+			}
+		}
+		if path, ok := cachedShellResolvedAgents()[commandName]; ok {
+			addCandidate(&fallbacks, path)
+		}
+	}
+
+	filteredFixedArgs := agent.FilterLaunchPrefix(runtimeType, fixedArgs, d.logger)
+	probeVersion := func(path string) (string, error) {
+		return detectAgentVersion(ctx, agent.NewCommand(path, filteredFixedArgs).ForVersionProbe(runtimeType))
+	}
+
+	var firstResolved string
+	var firstVerErr error
+	for _, candidate := range primary {
+		if firstResolved == "" {
+			firstResolved = candidate
+		}
+		version, verErr := probeVersion(candidate)
+		if verErr == nil {
+			return candidate, version, "", true
+		}
+		if firstVerErr == nil {
+			firstVerErr = verErr
+		}
+		d.logger.Warn("custom runtime profile: primary command failed version probe; checking fallbacks",
+			"workspace_id", workspaceID, "profile_id", profileID, "path", candidate, "error", verErr)
+	}
+
+	collectFallbacks()
+	for _, candidate := range fallbacks {
+		if firstResolved == "" {
+			firstResolved = candidate
+		}
+		version, verErr := probeVersion(candidate)
+		if verErr == nil {
+			if len(primary) > 0 {
+				d.logger.Info("custom runtime profile: fell back to healthy executable",
+					"workspace_id", workspaceID, "profile_id", profileID,
+					"failed_path", primary[0], "command_path", candidate, "version", version)
+			} else {
+				d.logger.Info("custom runtime profile: using discovered fallback command path",
+					"workspace_id", workspaceID, "profile_id", profileID,
+					"runtime_type", runtimeType, "command_path", candidate)
+			}
+			return candidate, version, "", true
+		}
+		if firstVerErr == nil {
+			firstVerErr = verErr
+		}
+	}
+
+	if firstResolved == "" {
+		d.logger.Info("skip custom runtime profile: command not found on PATH or provider discovery",
+			"workspace_id", workspaceID, "profile_id", profileID, "command_name", commandName)
+		if failureReason != "" {
+			failureReason += "; "
+		}
+		failureReason += "command not found on PATH or provider discovery: " + commandName
+		return "", "", failureReason, false
+	}
+
+	if runtimeType == "codex" && commandName == "codex" && firstVerErr != nil {
+		d.logger.Warn("skip custom runtime profile: codex executable failed health probe",
+			"workspace_id", workspaceID, "profile_id", profileID, "path", firstResolved, "error", firstVerErr)
+		if failureReason != "" {
+			failureReason += "; "
+		}
+		failureReason += fmt.Sprintf("codex executable at %s failed health check: %v", firstResolved, firstVerErr)
+		return "", "", failureReason, false
+	}
+
+	d.logger.Debug("custom runtime profile: version probe failed (registering with empty version)",
+		"workspace_id", workspaceID, "profile_id", profileID, "path", firstResolved, "error", firstVerErr)
+	return firstResolved, "", "", true
 }
 
 // profileSetSignature is a stable content hash of the workspace's custom
@@ -4920,7 +5063,7 @@ func (d *Daemon) handleModelList(ctx context.Context, rt Runtime, requestID stri
 	// enumerate the CLI the profile actually runs, so a subcommand wrapper is
 	// probed as `ccms start q36 models`, not `ccms models` (GH #7046).
 	var fixedArgs []string
-	if customSpec, isCustom := d.customProfileLaunchForRuntime(rt.ID); isCustom {
+	if customSpec, isCustom := d.resolveCustomProfileLaunchForRuntime(ctx, rt.ID); isCustom {
 		execPath = customSpec.path
 		fixedArgs = agent.FilterLaunchPrefix(rt.Provider, customSpec.fixedArgs, d.logger)
 		d.logger.Info("model list uses custom runtime profile command",
@@ -8342,7 +8485,7 @@ func (d *Daemon) runTask(ctx context.Context, task Task, provider string, slot i
 	// for compatibility exceptions verified against a specific vendor's CLI,
 	// which must not extend to arbitrary commands sharing a protocol family.
 	var usesCustomProfileCommand bool
-	if customSpec, isCustom := d.customProfileLaunchForRuntime(task.RuntimeID); isCustom {
+	if customSpec, isCustom := d.resolveCustomProfileLaunchForRuntime(prepareCtx, task.RuntimeID); isCustom {
 		usesCustomProfileCommand = true
 		entry.Path = customSpec.path
 		resolvedVersion = customSpec.version

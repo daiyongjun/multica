@@ -139,9 +139,17 @@ export function parseCommandLine(input: string): ParsedCommandLine {
         return { ok: false, error: "shell_syntax" };
       }
       if (ch === "\\" && next) {
-        token += next;
+        // Preserve Windows path separators (e.g. C:\Users\...\codex.exe,
+        // ~\AppData\..., \\server\share\codex.exe) while keeping POSIX
+        // backslash-escapes for whitespace, quotes, and shell metacharacters.
+        if (/[\s"'`|<>;&$]/.test(next) || (next === "\\" && token !== "")) {
+          token += next;
+          tokenStarted = true;
+          i += 1;
+          continue;
+        }
+        token += ch;
         tokenStarted = true;
-        i += 1;
         continue;
       }
       if (ch === "\\") {
@@ -163,9 +171,17 @@ export function parseCommandLine(input: string): ParsedCommandLine {
       continue;
     }
     if (quote === '"' && ch === "\\" && next) {
-      token += next;
+      // Standard double-quote escaping only escapes ", \, $, and `.
+      // Leaving other sequences untouched preserves quoted Windows paths like
+      // "C:\Program Files\OpenAI\Codex\bin\codex.exe".
+      if (next === '"' || next === "\\" || next === "$" || next === "`") {
+        token += next;
+        tokenStarted = true;
+        i += 1;
+        continue;
+      }
+      token += ch;
       tokenStarted = true;
-      i += 1;
       continue;
     }
     if (quote === '"' && ch === "\\") {
