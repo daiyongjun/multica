@@ -14,7 +14,7 @@ import {
   agentListOptions,
   memberListOptions,
 } from "@multica/core/workspace/queries";
-import type { MemberWithUser, RuntimeProfileType } from "@multica/core/types";
+import type { MemberWithUser } from "@multica/core/types";
 import { Button } from "@multica/ui/components/ui/button";
 import { IconButton } from "@multica/ui/components/common/icon-button";
 import {
@@ -138,7 +138,7 @@ export function RuntimeDetailPage({
   const now = useNowTick();
   const machineLocator = decodeRouteParam(runtimeId);
   const [renameOpen, setRenameOpen] = useState(false);
-  const [createProfile, setCreateProfile] = useState<RuntimeProfileType | "custom" | null>(null);
+  const [createProfileOpen, setCreateProfileOpen] = useState(false);
   const workloadIndex = useMemo(
     () => buildWorkloadIndex(agents, tasks),
     [agents, tasks],
@@ -334,17 +334,12 @@ export function RuntimeDetailPage({
             count={machineRuntimes.length}
             action={
               canAddRuntime ? (
-                <div className="flex flex-wrap justify-end gap-1">
-                  <ObjectSectionAction icon={Plus} onClick={() => setCreateProfile("codex")}>
-                    {t(($) => $.profiles.add_provider, { provider: "Codex" })}
-                  </ObjectSectionAction>
-                  <ObjectSectionAction icon={Plus} onClick={() => setCreateProfile("dsh")}>
-                    {t(($) => $.profiles.add_provider, { provider: "DeepSeek" })}
-                  </ObjectSectionAction>
-                  <ObjectSectionAction icon={Plus} onClick={() => setCreateProfile("custom")}>
-                    {t(($) => $.profiles.add_custom)}
-                  </ObjectSectionAction>
-                </div>
+                <ObjectSectionAction
+                  icon={Plus}
+                  onClick={() => setCreateProfileOpen(true)}
+                >
+                  {t(($) => $.profiles.add_custom)}
+                </ObjectSectionAction>
               ) : null
             }
           >
@@ -387,14 +382,13 @@ export function RuntimeDetailPage({
           currentName={renameTarget.currentName}
         />
       )}
-      {canAddRuntime && createProfile && (
+      {canAddRuntime && createProfileOpen && (
         <RuntimeProfilesDialog
           wsId={wsId}
           intent="create"
-          initialCreateFamily={createProfile === "custom" ? undefined : createProfile}
           daemonId={machine.daemonId ?? undefined}
           machineName={machine.title}
-          onClose={() => setCreateProfile(null)}
+          onClose={() => setCreateProfileOpen(false)}
         />
       )}
     </>

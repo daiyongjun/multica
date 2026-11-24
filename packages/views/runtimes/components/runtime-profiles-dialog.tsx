@@ -80,7 +80,6 @@ export function RuntimeProfilesDialog({
   daemonId,
   machineName,
   initialProfile,
-  initialCreateFamily,
   onProfileCreated,
   onClose,
 }: {
@@ -89,7 +88,6 @@ export function RuntimeProfilesDialog({
   daemonId?: string;
   machineName?: string;
   initialProfile?: RuntimeProfile;
-  initialCreateFamily?: RuntimeProfileType;
   onProfileCreated?: (profile: RuntimeProfile) => void;
   onClose: () => void;
 }) {
@@ -100,7 +98,7 @@ export function RuntimeProfilesDialog({
 
   const [state, setState] = useState<DialogState>(() => {
     if (intent === "create") {
-      return { surface: "form", mode: "create", step: initialCreateFamily ? "details" : "family" };
+      return { surface: "form", mode: "create", step: "family" };
     }
     if (intent === "edit" && initialProfile) {
       return { surface: "form", mode: "edit", profile: initialProfile };
@@ -110,7 +108,7 @@ export function RuntimeProfilesDialog({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   // Carries the chosen family from create-step-1 into the form.
   const [draftFamily, setDraftFamily] =
-    useState<RuntimeProfileType>(initialCreateFamily ?? RUNTIME_TYPES[0] ?? "claude");
+    useState<RuntimeProfileType>(RUNTIME_TYPES[0] ?? "claude");
 
   const catalog = useMemo(() => buildRuntimeCatalog(profiles), [profiles]);
   const entries = useMemo(
@@ -790,10 +788,10 @@ function ProfileDetailsForm({
   const [bindingMachine, setBindingMachine] = useState("");
 
   const [values, setValues] = useState<ProfileFormValues>({
-    displayName: profile?.display_name ?? (family === "codex" || family === "dsh" ? runtimeTypeLabel(family) : ""),
+    displayName: profile?.display_name ?? "",
     commandLine: profile
       ? formatCommandLine(profile.command_name, profile.fixed_args)
-      : family === "codex" || family === "dsh" ? family : "",
+      : "",
     description: profile?.description ?? "",
   });
   const [errors, setErrors] = useState<ProfileFormErrorField[]>([]);

@@ -390,7 +390,6 @@
   },
   "profiles": {
     "cta": "添加运行时",
-    "add_provider": "添加 {{provider}}",
     "add_custom": "添加自定义运行时",
     "this_machine": "这台机器",
     "unassigned_title": "尚未连接到机器的自定义运行时",

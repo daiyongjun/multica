@@ -402,7 +402,6 @@
   },
   "profiles": {
     "cta": "Add runtime",
-    "add_provider": "Add {{provider}}",
     "add_custom": "Add custom runtime",
     "this_machine": "this machine",
     "unassigned_title": "Custom runtimes without a machine",

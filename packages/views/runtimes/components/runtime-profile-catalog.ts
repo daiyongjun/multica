@@ -34,8 +34,6 @@ export const RUNTIME_TYPES = RUNTIME_PROFILE_RUNTIME_TYPES;
 // the id — `capitalize` at the render site turns "claude" into "Claude". Only
 // targets whose product name differs from the stored id need an entry here.
 const RUNTIME_TYPE_LABELS: Partial<Record<RuntimeProfileType, string>> = {
-  codex: "Codex",
-  dsh: "DeepSeek Harness",
   omp: "Oh-My-Pi",
 };
 
