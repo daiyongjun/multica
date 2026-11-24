@@ -100,7 +100,7 @@ export const metadata: Metadata = {
     shortcut: ["/workstack.svg"],
     // iOS never reads the manifest's icons for the home screen; it needs its
     // own opaque, full-bleed square and rounds the corners itself.
-    apple: [{ url: "/workstack.svg", type: "image/svg+xml" }],
+    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180" }],
   },
   // Home-screen behaviour: launch without browser chrome, and label the icon
   // "个人工作栈" rather than the long SEO <title>. `capable` renders the

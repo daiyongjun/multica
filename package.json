@@ -34,7 +34,7 @@
     "theme:preview": "node scripts/theme-preview.mjs",
     "clean": "turbo clean && rm -rf node_modules",
     "ui:add": "cd packages/ui && npx shadcn@latest add",
-    "generate:brand": "node scripts/brand/generate.mjs",
+    "generate:brand": "node scripts/brand/workstack.mjs",
     "generate:attachment-text-preview": "node scripts/generate-attachment-text-preview.mjs",
     "generate:reserved-slugs": "node scripts/generate-reserved-slugs.mjs"
   },

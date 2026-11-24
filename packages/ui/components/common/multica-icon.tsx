@@ -1,3 +1,4 @@
+import { WORKSTACK_BACKGROUND, WORKSTACK_ACCENT, WORKSTACK_FOREGROUND, WORKSTACK_BARS, WORKSTACK_TALL_BAR } from "../../lib/workstack-brand";
 import { cn } from "../../lib/utils";
 
 export type MulticaIconMode =
@@ -32,9 +33,9 @@ export function MulticaIcon({ mode = "static", shape = "square", size, title, cl
       aria-hidden={title ? undefined : true}
       className={cn("inline-block shrink-0", size == null && "size-[1em]", mode === "intro" && "multica-pop", mode === "think" && "animate-pulse", className)}
       style={{ ...(size != null && { width: size, height: size }), ...style }} {...props}>
-      <rect width="100" height="100" rx={shape === "circle" ? 50 : 22.5} fill="#173b37" />
-      <path d="M24 53h12v25H24zM44 42h12v36H44z" fill="#9ee2cb" />
-      <path d="M64 28h12v50H64z" fill="#f0f8f4" />
+      <rect width="100" height="100" rx={shape === "circle" ? 50 : 22.5} fill={WORKSTACK_BACKGROUND} />
+      <path d={WORKSTACK_BARS} fill={WORKSTACK_ACCENT} />
+      <path d={WORKSTACK_TALL_BAR} fill={WORKSTACK_FOREGROUND} />
     </svg>
   );
 }

@@ -1,3 +1,9 @@
+# Workstack fork assets
+
+`pnpm generate:brand` runs `workstack.mjs` and generates the desktop PNG/ICO/ICNS and web PWA icons from `packages/ui/lib/workstack-brand.ts`, also used by the shared UI icon. Requires Node 22.18+, Google Chrome (override `BRAND_BROWSER_CHANNEL` for another installed Playwright channel), and macOS `sips`/`iconutil` for ICNS.
+
+The upstream generator below is retained for upstream-only artwork; it is not the fork icon generation command.
+
 # Brand assets
 
 Every logo file in the repo is generated from `packages/ui/lib/multica-brand.ts`.
