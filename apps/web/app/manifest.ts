@@ -15,8 +15,8 @@ export const PWA_START_URL = "/inbox";
 export default function manifest(): MetadataRoute.Manifest {
   return {
     id: "/",
-    name: "个人工作栈",
-    short_name: "个人工作栈",
+    name: "Think",
+    short_name: "Think",
     description:
       "Assign tasks to coding agents, track progress, and keep your team's work in one place.",
     start_url: PWA_START_URL,

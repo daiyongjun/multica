@@ -3,6 +3,7 @@ export interface RuntimeConfig {
   apiUrl: string;
   wsUrl: string;
   appUrl: string;
+  defaultLoginKey?: string;
 }
 
 export interface RuntimeConfigError {
@@ -74,8 +75,11 @@ export function parseRuntimeConfig(raw: string): RuntimeConfig {
   const wsUrl = optionalString(obj.wsUrl, "wsUrl");
 
   const normalizedApiUrl = normalizeHttpUrl(apiUrl, "apiUrl");
+  const defaultLoginKey = optionalString(obj.defaultLoginKey, "defaultLoginKey");
+  const hostname = new URL(normalizedApiUrl).hostname;
   return {
     schemaVersion: 1,
+    ...(defaultLoginKey && (hostname === "localhost" || hostname === "127.0.0.1") ? { defaultLoginKey } : {}),
     apiUrl: normalizedApiUrl,
     wsUrl: wsUrl ? normalizeWsUrl(wsUrl, "wsUrl") : deriveWsUrl(normalizedApiUrl),
     appUrl: appUrl ? normalizeHttpUrl(appUrl, "appUrl") : deriveAppUrl(normalizedApiUrl),

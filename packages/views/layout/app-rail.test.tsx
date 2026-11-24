@@ -242,29 +242,10 @@ describe("AppRail spaces", () => {
 });
 
 describe("AppRail label disclosure", () => {
-  const tooltip = () => document.querySelector("[data-slot=tooltip-content]");
-
-  // jsdom does not lay out the rail: model a label too long for the item.
-  function clipLabel(el: HTMLElement) {
-    el.style.overflowX = "hidden";
-    Object.defineProperties(el, {
-      scrollWidth: { configurable: true, value: 90 },
-      clientWidth: { configurable: true, value: 44 },
-    });
-  }
-
-  it("names a space whose label is cut off even when it is already the full name", async () => {
+  it("gives an icon-only space a full accessible name", () => {
     renderRail();
-    const chat = link("/acme/chat")!;
-    clipLabel(within(chat).getByText("Chat"));
-    await act(async () => chat.focus());
-    expect(tooltip()).toHaveTextContent("Chat");
-  });
-
-  it("stays quiet when the full-name label fits", async () => {
-    renderRail();
-    await act(async () => link("/acme/chat")!.focus());
-    expect(tooltip()).toBeNull();
+    const chat = screen.getByRole("link", { name: "Chat" });
+    expect(within(chat).queryByText("Chat")).toBeNull();
   });
 });
 

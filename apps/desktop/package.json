@@ -1,6 +1,6 @@
 {
   "name": "@multica/desktop",
-  "productName": "个人工作栈",
+  "productName": "Think",
   "version": "0.11.1",
   "private": true,
   "description": "Multica Desktop — native desktop client for the Multica platform.",

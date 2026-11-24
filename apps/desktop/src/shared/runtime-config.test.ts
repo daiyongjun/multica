@@ -7,6 +7,14 @@ import {
 } from "./runtime-config";
 
 describe("runtime config", () => {
+  it("only exposes the default login key for a local API", () => {
+    const config = { schemaVersion: 1, defaultLoginKey: "test-key".repeat(5) };
+    expect(parseRuntimeConfig(JSON.stringify({ ...config, apiUrl: "http://127.0.0.1:18080" })).defaultLoginKey)
+      .toBe(config.defaultLoginKey);
+    expect(parseRuntimeConfig(JSON.stringify({ ...config, apiUrl: "https://example.com" })).defaultLoginKey)
+      .toBeUndefined();
+  });
+
   it("derives https/wss compatible URLs from apiUrl", () => {
     expect(
       parseRuntimeConfig(

@@ -51,7 +51,6 @@ const QODER_NAME = "Qoder Cloud Agents";
 
 const COMING_SOON = [
   { provider: "cursor", name: "Cursor Cloud Agents", vendor: "Cursor" },
-  { provider: "claude", name: "Claude Managed Agents", vendor: "Anthropic" },
 ];
 
 const ROW = "flex w-full min-w-0 items-center gap-3 px-4 text-left";
@@ -226,6 +225,7 @@ function MachineBlock({
   selectedRuntimeId,
   selectedNotice,
   onSelect,
+  onAddRuntime,
 }: {
   device: DeviceOption;
   open: boolean;
@@ -238,8 +238,10 @@ function MachineBlock({
   selectedRuntimeId: string | null;
   selectedNotice: string | null;
   onSelect: (runtimeId: string) => void;
+  onAddRuntime?: () => void;
 }) {
   const { t } = useT("agents");
+  const { t: tRuntimes } = useT("runtimes");
   const healthLabel = useHealthLabel();
   const { machine, harnesses } = device;
   const searching = query.trim().length > 0;
@@ -377,6 +379,14 @@ function MachineBlock({
             })}
           </span>
         </button>
+      ) : null}
+      {open && onAddRuntime ? (
+        <div className={cn(ROW, CHILD_INDENT, "min-h-10")}>
+          <Button variant="ghost" size="sm" onClick={onAddRuntime}>
+            <Plus aria-hidden="true" className="size-3.5" />
+            {tRuntimes(($) => $.profiles.add_custom)}
+          </Button>
+        </div>
       ) : null}
     </>
   );
@@ -519,6 +529,7 @@ export interface RuntimeChoiceListProps {
   onConnectQoder: () => void;
   onManageQoder: () => void;
   onAddRemote: () => void;
+  onAddRuntime?: (machine: DeviceOption["machine"]) => void;
 }
 
 /**
@@ -545,6 +556,7 @@ export function RuntimeChoiceList({
   onConnectQoder,
   onManageQoder,
   onAddRemote,
+  onAddRuntime,
 }: RuntimeChoiceListProps) {
   const { t } = useT("agents");
   const [openOverrides, setOpenOverrides] = useState<ReadonlyMap<string, boolean>>(
@@ -649,6 +661,11 @@ export function RuntimeChoiceList({
                 owner={owner}
                 selectedRuntimeId={selectedRuntimeId}
                 selectedNotice={noticeFor(device)}
+                onAddRuntime={
+                  canManage && device.machine.mode === "local" && device.machine.daemonId && onAddRuntime
+                    ? () => onAddRuntime(device.machine)
+                    : undefined
+                }
                 onSelect={onSelect}
               />
             );

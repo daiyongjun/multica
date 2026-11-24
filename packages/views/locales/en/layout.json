@@ -68,9 +68,9 @@
   "star_prompt": {
     "title_one": "{{agent}} has completed {{count}} issue",
     "title_other": "{{agent}} has completed {{count}} issues",
-    "body": "If 个人工作栈 has been useful, a star on GitHub helps other teams find it.",
+    "body": "If Think has been useful, a star on GitHub helps other teams find it.",
     "star": "Star",
-    "star_label": "Star 个人工作栈 on GitHub",
+    "star_label": "Star Think on GitHub",
     "later": "Not now",
     "close": "Close"
   },

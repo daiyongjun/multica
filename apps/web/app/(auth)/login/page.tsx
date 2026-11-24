@@ -4,7 +4,7 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { sanitizeNextUrl, useAuthStore } from "@multica/core/auth";
-import { useConfigStore } from "@multica/core/config";
+import { MulticaIcon } from "@multica/ui/components/common/multica-icon";
 import {
   workspaceKeys,
   workspaceListOptions,
@@ -61,7 +61,6 @@ function LoginPageContent() {
   const router = useRouter();
   const qc = useQueryClient();
   const { t } = useT("auth");
-  const googleClientId = useConfigStore((state) => state.googleClientId);
   const user = useAuthStore((s) => s.user);
   const isLoading = useAuthStore((s) => s.isLoading);
   const searchParams = useSearchParams();
@@ -151,22 +150,6 @@ function LoginPageContent() {
     router.push(await resolveLoggedInDestination(qc, onboarded, list));
   };
 
-  // Build Google OAuth state: encode platform, next URL, and CLI callback
-  // params so the callback can redirect to the right place after login.
-  // CLI callback/state must survive the Google OAuth round-trip so the
-  // post-login callback page can redirect the JWT back to the CLI's local
-  // HTTP listener (critical for headless / WSL2 environments).
-  const googleState = [
-    platform === "desktop" ? "platform:desktop" : "",
-    nextUrl ? `next:${nextUrl}` : "",
-    cliCallbackRaw && validateCliCallback(cliCallbackRaw)
-      ? `cli_callback:${encodeURIComponent(cliCallbackRaw)}`
-      : "",
-    cliState ? `cli_state:${encodeURIComponent(cliState)}` : "",
-  ]
-    .filter(Boolean)
-    .join(",") || undefined;
-
   if (invalidCliCallback) return <CliCallbackError />;
 
   // While the desktop handoff is in progress (or has produced a token/error),
@@ -222,15 +205,7 @@ function LoginPageContent() {
   return (
     <LoginPage
       onSuccess={handleSuccess}
-      google={
-        googleClientId
-          ? {
-              clientId: googleClientId,
-              redirectUri: `${window.location.origin}/auth/callback`,
-              state: googleState,
-            }
-          : undefined
-      }
+      logo={<MulticaIcon size={48} />}
       cliCallback={
         cliCallbackRaw && validateCliCallback(cliCallbackRaw)
           ? { url: cliCallbackRaw, state: cliState }

@@ -39,7 +39,6 @@ import {
   type RailSpaceId,
 } from "@multica/core/paths";
 import { TooltipHint } from "@multica/ui/components/common/tooltip-hint";
-import { TruncatedTooltip } from "@multica/ui/components/common/truncated-tooltip";
 import { CappedNumberFlow } from "@multica/ui/components/ui/number-flow";
 import { cn } from "@multica/ui/lib/utils";
 import { copyText } from "@multica/ui/lib/clipboard";
@@ -123,7 +122,7 @@ function RailBadgeMark({ badge }: { badge: RailBadge }) {
       <span
         aria-hidden
         className={cn(
-          "absolute top-1 right-3 size-2 rounded-full bg-warning",
+          "absolute top-1.5 right-1.5 size-2 rounded-full bg-warning",
           ring,
         )}
       />
@@ -134,7 +133,7 @@ function RailBadgeMark({ badge }: { badge: RailBadge }) {
       value={badge.value}
       animated={false}
       className={cn(
-        "absolute top-0 right-1 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] leading-none font-medium tabular-nums",
+        "absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] leading-none font-medium tabular-nums",
         ring,
         badge.tone === "brand" ? "bg-brand text-brand-foreground" : "bg-foreground text-background",
       )}
@@ -186,7 +185,6 @@ function RailSpaceLink({
   space,
   href,
   icon: Icon,
-  label,
   fullLabel,
   active,
   badge,
@@ -194,7 +192,6 @@ function RailSpaceLink({
   space: RailSpaceId;
   href: string;
   icon: IconComponent;
-  label: string;
   fullLabel: string;
   active: boolean;
   badge?: RailBadge;
@@ -209,13 +206,14 @@ function RailSpaceLink({
       data-space={space}
       newTabTitle={fullLabel}
       draggable={false}
+      aria-label={fullLabel}
       aria-current={active ? "page" : undefined}
       onContextMenu={openInNewTab ? rowMenu.openAtPointer : undefined}
       {...peekHandlers}
-      className="group relative flex size-12 flex-col items-center justify-center gap-1 rounded-rail-item text-rail-item transition-colors outline-none hover:bg-rail-item-hover hover:text-rail-item-active-foreground focus-visible:outline-2 focus-visible:outline-ring aria-[current=page]:bg-rail-item-active aria-[current=page]:font-medium aria-[current=page]:text-rail-item-active-foreground"
+      className="group relative grid size-10 place-items-center rounded-xl text-rail-item outline-none transition-colors hover:bg-rail-item-hover hover:text-rail-item-active-foreground focus-visible:outline-2 focus-visible:outline-ring aria-[current=page]:bg-rail-item-active aria-[current=page]:text-rail-item-active-foreground"
     >
-      <Icon className="size-5" />
-      <span className="max-w-full truncate px-0.5 text-micro leading-[14px]">{label}</span>
+      <Icon className="size-5" aria-hidden="true" />
+      {active && <span aria-hidden className="absolute left-0 h-3 w-0.5 rounded-full bg-brand" />}
       {badge && <RailBadgeMark badge={badge} />}
     </AppLink>
   );
@@ -226,18 +224,6 @@ function RailSpaceLink({
       <RailSpaceMenu space={space} href={href} title={fullLabel} state={rowMenu} />
     </span>
   );
-  // A label the same as the full name still needs the tooltip whenever a
-  // locale's text doesn't fit the 48px item.
-  if (label === fullLabel) {
-    return (
-      <>
-        <TruncatedTooltip content={fullLabel} side="right">
-          {link}
-        </TruncatedTooltip>
-        {menu}
-      </>
-    );
-  }
   return (
     <>
       <TooltipHint label={fullLabel} side="right">
@@ -394,35 +380,30 @@ export function AppRail({
     [order, releaseClickGuard, setOrder],
   );
 
-  const items: Record<RailSpaceId, { href: string; icon: IconComponent; label: string; fullLabel: string }> = {
+  const items: Record<RailSpaceId, { href: string; icon: IconComponent; fullLabel: string }> = {
     work: {
       href: p.issues(),
       icon: routeIconForPath(p.issues()),
-      label: t(($) => $.rail.work),
       fullLabel: t(($) => $.spaces.work),
     },
     docs: {
       href: p.docs(),
       icon: routeIconForPath(p.docs()),
-      label: t(($) => $.rail.docs),
       fullLabel: t(($) => $.nav.docs),
     },
     team: {
       href: p.agents(),
       icon: Users,
-      label: t(($) => $.rail.team),
       fullLabel: t(($) => $.spaces.team),
     },
     chat: {
       href: p.chat(),
       icon: routeIconForPath(p.chat()),
-      label: t(($) => $.rail.chat),
       fullLabel: t(($) => $.nav.chat),
     },
     autopilots: {
       href: p.autopilots(),
       icon: routeIconForPath(p.autopilots()),
-      label: t(($) => $.rail.autopilots),
       fullLabel: t(($) => $.nav.autopilots),
     },
   };
@@ -447,6 +428,7 @@ export function AppRail({
         {!guest && <NewIssueButton className={RAIL_ICON_BUTTON_CLASS} tooltipSide="right" />}
         <SearchButton className={RAIL_ICON_BUTTON_CLASS} tooltipSide="right" />
       </div>
+      {!guest && <div aria-hidden className="mb-2 w-5 border-t border-surface-border" />}
       {!guest && (
         <DndContext
           sensors={sensors}
@@ -457,7 +439,7 @@ export function AppRail({
           onDragCancel={releaseClickGuard}
         >
           <SortableContext items={visibleOrder} strategy={verticalListSortingStrategy}>
-            <ul className="flex flex-col items-center gap-0.5">
+            <ul className="flex flex-col items-center gap-1">
               {visibleOrder.map((id) => (
                 <SortableRailItem key={id} id={id}>
                   <RailSpaceLink

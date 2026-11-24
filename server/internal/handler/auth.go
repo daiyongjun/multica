@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -446,6 +447,26 @@ func (h *Handler) VerifyCode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	h.completeEmailLogin(w, r, email)
+}
+
+// ThinkDefaultLogin is enabled only for a dedicated local desktop account.
+func (h *Handler) ThinkDefaultLogin(w http.ResponseWriter, r *http.Request) {
+	key := os.Getenv("THINK_DEFAULT_LOGIN_KEY")
+	remote, _, err := net.SplitHostPort(r.RemoteAddr)
+	host := net.ParseIP(remote)
+	token, ok := strings.CutPrefix(r.Header.Get("Authorization"), "Bearer ")
+	if isProductionEnv() || os.Getenv("MULTICA_BIND_HOST") != "127.0.0.1" ||
+		len(key) < 32 || err != nil || host == nil || !host.IsLoopback() || !ok ||
+		subtle.ConstantTimeCompare([]byte(key), []byte(token)) != 1 {
+		writeError(w, http.StatusNotFound, "default login unavailable")
+		return
+	}
+	w.Header().Set("Cache-Control", "no-store")
+	h.completeEmailLogin(w, r, "think-local@think.invalid")
+}
+
+func (h *Handler) completeEmailLogin(w http.ResponseWriter, r *http.Request, email string) {
 	user, isNew, err := h.findOrCreateUser(r.Context(), email)
 	if err != nil {
 		if errors.Is(err, auth.ErrTemporarilyDisabledUser) {
@@ -471,7 +492,7 @@ func (h *Handler) VerifyCode(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusForbidden, auth.TemporarilyDisabledUserError)
 			return
 		}
-		slog.Warn("login failed", append(logger.RequestAttrs(r), "error", err, "email", req.Email)...)
+		slog.Warn("login failed", append(logger.RequestAttrs(r), "error", err, "email", email)...)
 		writeError(w, http.StatusInternalServerError, "failed to generate token")
 		return
 	}

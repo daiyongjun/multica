@@ -41,6 +41,9 @@ interface CliCallbackConfig {
   state: string;
 }
 
+const loginShell = "grid min-h-svh place-items-center bg-background px-5 py-10";
+const loginPanel = "w-full max-w-[400px] gap-6 rounded-none border-0 bg-transparent py-0 shadow-none";
+
 interface LoginPageProps {
   /** Logo element rendered above the title */
   logo?: ReactNode;
@@ -60,6 +63,8 @@ interface LoginPageProps {
    *  app?" prompt; desktop omits it (a download prompt inside the app
    *  would be absurd). */
   extra?: ReactNode;
+  /** Primary sign-in action provided by a local desktop deployment. */
+  primaryAction?: ReactNode;
 }
 
 // Helpers
@@ -101,6 +106,7 @@ export function LoginPage({
   onTokenObtained,
   onGoogleLogin,
   extra,
+  primaryAction,
 }: LoginPageProps) {
   const { t } = useT("auth");
   const qc = useQueryClient();
@@ -297,11 +303,11 @@ export function LoginPage({
 
   if (step === "cli_confirm" && existingUser) {
     return (
-      <div className="flex min-h-svh items-center justify-center">
-        <Card className="w-full max-w-sm">
-          <CardHeader className="text-center">
-            {logo && <div className="mx-auto mb-4">{logo}</div>}
-            <CardTitle className="text-display-sm">
+      <div className={loginShell}>
+        <Card className={loginPanel}>
+          <CardHeader className="gap-2 text-center">
+            {logo && <div className="mx-auto mb-3">{logo}</div>}
+            <CardTitle className="text-display-sm font-semibold tracking-tight">
               {t(($) => $.cli.title)}
             </CardTitle>
             <CardDescription>
@@ -339,11 +345,11 @@ export function LoginPage({
 
   if (step === "code") {
     return (
-      <div className="flex min-h-svh items-center justify-center">
-        <Card className="w-full max-w-sm">
-          <CardHeader className="text-center">
-            {logo && <div className="mx-auto mb-4">{logo}</div>}
-            <CardTitle className="text-display-sm">
+      <div className={loginShell}>
+        <Card className={loginPanel}>
+          <CardHeader className="gap-2 text-center">
+            {logo && <div className="mx-auto mb-3">{logo}</div>}
+            <CardTitle className="text-display-sm font-semibold tracking-tight">
               {t(($) => $.verify.title)}
             </CardTitle>
             <CardDescription>
@@ -386,7 +392,7 @@ export function LoginPage({
               </button>
             </div>
           </CardContent>
-          <CardFooter>
+          <CardFooter className="border-0 bg-transparent px-4 py-0">
             <Button
               type="button"
               variant="ghost"
@@ -408,11 +414,11 @@ export function LoginPage({
   // Email step
 
   return (
-    <div className="flex min-h-svh items-center justify-center">
-      <Card className="w-full max-w-sm">
-        <CardHeader className="text-center">
-          {logo && <div className="mx-auto mb-4">{logo}</div>}
-          <CardTitle className="text-display-sm">
+    <div className={loginShell}>
+      <Card className={loginPanel}>
+        <CardHeader className="gap-2 text-center">
+          {logo && <div className="mx-auto mb-3">{logo}</div>}
+          <CardTitle className="text-display-sm font-semibold tracking-tight">
             {t(($) => $.signin.title)}
           </CardTitle>
           <CardDescription>
@@ -427,6 +433,12 @@ export function LoginPage({
               </AlertDescription>
             </Alert>
           )}
+          {primaryAction && (
+            <div className="space-y-5">
+              {primaryAction}
+              <hr className="border-border" />
+            </div>
+          )}
           <form id="login-form" onSubmit={handleSendCode} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="login-email">{t(($) => $.common.email)}</Label>
@@ -436,7 +448,7 @@ export function LoginPage({
                 placeholder={t(($) => $.common.email_placeholder)}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                autoFocus
+                autoFocus={!primaryAction}
                 required
               />
             </div>
@@ -445,10 +457,11 @@ export function LoginPage({
             )}
           </form>
         </CardContent>
-        <CardFooter className="flex flex-col gap-3">
+        <CardFooter className="flex flex-col gap-4 border-0 bg-transparent px-4 py-0">
           <Button
             type="submit"
             form="login-form"
+            variant={primaryAction ? "outline" : "default"}
             className="w-full"
             size="lg"
             disabled={!email || loading}

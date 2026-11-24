@@ -127,6 +127,23 @@ afterEach(() => {
 });
 
 describe("RuntimeChoiceList", () => {
+  it("opens custom runtime setup for the machine whose action was clicked", () => {
+    const onAddRuntime = vi.fn();
+    mount({ onAddRuntime });
+
+    fireEvent.click(screen.getByRole("button", { name: /build-01/ }));
+    const actions = screen.getAllByRole("button", { name: "Add custom runtime" });
+    expect(actions).toHaveLength(2);
+    fireEvent.click(actions[1]!);
+    expect(onAddRuntime).toHaveBeenCalledWith(groups.remotes[0]?.machine);
+  });
+
+  it("does not expose custom runtime creation to workspace members", () => {
+    mount({ canManage: false, onAddRuntime: vi.fn() });
+
+    expect(screen.queryByRole("button", { name: "Add custom runtime" })).toBeNull();
+  });
+
   it("opens this machine, folds harnesses past six, and keeps other machines closed", () => {
     const props = mount();
 

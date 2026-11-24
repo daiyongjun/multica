@@ -121,7 +121,6 @@ const STATUS_FILTERS: StatusFilter[] = ["all", "online", "offline"];
 
 const COMING_SOON_SERVICES = [
   { provider: "cursor", name: "Cursor Cloud Agents", vendor: "Cursor" },
-  { provider: "claude", name: "Claude Managed Agents", vendor: "Anthropic" },
 ];
 
 type RuntimeRow =
@@ -194,7 +193,10 @@ export function RuntimesPage({
   const restoreScrollRef = useRestoredScrollRef("runtimes");
 
   const { data: runtimes = [], isLoading: runtimesLoading } = useQuery(
-    runtimeListOptions(wsId),
+    {
+      ...runtimeListOptions(wsId),
+      select: (items) => items.filter((runtime) => runtime.provider !== "claude"),
+    },
   );
   const { data: runtimeProfiles = [], isLoading: profilesLoading } = useQuery(
     runtimeProfileListOptions(wsId),

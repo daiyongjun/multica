@@ -67,8 +67,8 @@ vi.mock("./rename-machine-dialog", () => ({
     open ? <div role="dialog">Rename machine dialog</div> : null,
 }));
 vi.mock("./runtime-profiles-dialog", () => ({
-  RuntimeProfilesDialog: ({ daemonId }: { daemonId?: string }) => (
-    <div role="dialog" data-daemon-id={daemonId}>Custom runtime dialog</div>
+  RuntimeProfilesDialog: ({ daemonId, initialCreateFamily }: { daemonId?: string; initialCreateFamily?: string }) => (
+    <div role="dialog" data-daemon-id={daemonId} data-family={initialCreateFamily}>Custom runtime dialog</div>
   ),
 }));
 
@@ -156,6 +156,16 @@ describe("RuntimeDetailPage", () => {
       "data-daemon-id", "daemon-remote",
     );
   });
+
+  it.each([["Codex", "codex"], ["DeepSeek", "dsh"]])(
+    "opens the existing runtime form preselected for %s",
+    (name, family) => {
+      renderPage({ runtimes: [makeRuntime()] });
+      fireEvent.click(screen.getByRole("button", { name: "Add " + name }));
+      expect(screen.getByRole("dialog")).toHaveAttribute("data-family", family);
+      expect(screen.getByRole("dialog")).toHaveAttribute("data-daemon-id", makeRuntime().daemon_id);
+    },
+  );
 
   it("keeps the breadcrumb header in place while the machine loads", () => {
     const { container } = renderPage({ runtimes: null });

@@ -1,5 +1,5 @@
 appId: ai.multica.desktop
-productName: 个人工作栈
+productName: Think
 directories:
   buildResources: build
 files:
@@ -46,7 +46,7 @@ mac:
   entitlementsInherit: build/entitlements.mac.plist
   extendInfo:
     # Shown in the macOS prompt the first time voice input opens the mic.
-    NSMicrophoneUsageDescription: 个人工作栈 uses the microphone for voice input when you dictate into chat or comments.
+    NSMicrophoneUsageDescription: Think uses the microphone for voice input when you dictate into chat or comments.
   target:
     - dmg
     - zip

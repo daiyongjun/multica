@@ -19,7 +19,8 @@ import { useT } from "../../i18n";
 import { ConnectRemoteDialog } from "../../runtimes/components/connect-remote-dialog";
 import { RemoteRuntimeDialog } from "../../runtimes/components/remote-runtime-dialog";
 import { QODER_RUNTIME_LOCATOR } from "../../runtimes/components/qoder-detail-page";
-import { buildRuntimeMachines } from "../../runtimes/components/runtime-machines";
+import { buildRuntimeMachines, type RuntimeMachine } from "../../runtimes/components/runtime-machines";
+import { RuntimeProfilesDialog } from "../../runtimes/components/runtime-profiles-dialog";
 import { CreateFlowFooter } from "./create-agent-footer";
 import { AgentCreateShell } from "./create-shell";
 import { buildRuntimeChoiceGroups, type HarnessOption } from "./runtime-choice";
@@ -64,7 +65,10 @@ export function ChooseRuntimePage({
   const currentUserId = useAuthStore((state) => state.user?.id ?? null);
 
   const { data: runtimes = [], isLoading: runtimesLoading } = useQuery(
-    runtimeListOptions(wsId),
+    {
+      ...runtimeListOptions(wsId),
+      select: (items) => items.filter((runtime) => runtime.provider !== "claude"),
+    },
   );
   const { data: members = [] } = useQuery(memberListOptions(wsId));
   const { data: qoderConnection } = useQuery(qoderOptions(wsId));
@@ -99,6 +103,7 @@ export function ChooseRuntimePage({
   const [selection, setSelection] = useState<Selection>(null);
   const [query, setQuery] = useState("");
   const [showConnectRemote, setShowConnectRemote] = useState(false);
+  const [profileMachine, setProfileMachine] = useState<RuntimeMachine | null>(null);
   const [qoderDialogOpen, setQoderDialogOpen] = useState(false);
   const [selectQoderWhenReady, setSelectQoderWhenReady] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -270,6 +275,7 @@ export function ChooseRuntimePage({
                 navigation.push(paths.runtimeDetail(QODER_RUNTIME_LOCATOR))
               }
               onAddRemote={() => setShowConnectRemote(true)}
+              onAddRuntime={setProfileMachine}
             />
           </div>
         </div>
@@ -295,6 +301,15 @@ export function ChooseRuntimePage({
       </CreateFlowFooter>
       {showConnectRemote ? (
         <ConnectRemoteDialog onClose={() => setShowConnectRemote(false)} />
+      ) : null}
+      {canManage && profileMachine?.daemonId ? (
+        <RuntimeProfilesDialog
+          wsId={wsId}
+          intent="create"
+          daemonId={profileMachine.daemonId}
+          machineName={profileMachine.title}
+          onClose={() => setProfileMachine(null)}
+        />
       ) : null}
       {qoderDialogOpen ? (
         <RemoteRuntimeDialog

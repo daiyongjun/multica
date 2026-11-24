@@ -90,9 +90,9 @@
   "star_prompt": {
     "title_one": "{{agent}} ha completado {{count}} tarea",
     "title_other": "{{agent}} ha completado {{count}} tareas",
-    "body": "Si 个人工作栈 te resulta útil, una estrella en GitHub ayuda a que otros equipos lo descubran.",
+    "body": "Si Think te resulta útil, una estrella en GitHub ayuda a que otros equipos lo descubran.",
     "star": "Star",
-    "star_label": "Dar una Star a 个人工作栈 en GitHub",
+    "star_label": "Dar una Star a Think en GitHub",
     "later": "Ahora no",
     "close": "Cerrar"
   },

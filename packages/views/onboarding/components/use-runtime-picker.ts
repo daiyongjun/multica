@@ -32,7 +32,8 @@ export function useRuntimePicker(wsId: string, wsSlug?: string): {
 
   const { data: runtimes = [] } = useQuery({
     ...runtimeListOptions(wsId, "me", wsSlug),
-    refetchInterval: (q) => (q.state.data?.length ? false : 2000),
+    select: (items) => items.filter((runtime) => runtime.provider !== "claude"),
+    refetchInterval: (q) => (q.state.data?.some((runtime) => runtime.provider !== "claude") ? false : 2000),
   });
 
   const handleDaemonEvent = useCallback(() => {
@@ -43,10 +44,10 @@ export function useRuntimePicker(wsId: string, wsSlug?: string): {
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (selectedId) return;
+    if (runtimes.some((runtime) => runtime.id === selectedId)) return;
     const preferred =
       runtimes.find((r) => r.status === "online") ?? runtimes[0];
-    if (preferred) setSelectedId(preferred.id);
+    setSelectedId(preferred?.id ?? null);
   }, [runtimes, selectedId]);
 
   const selected = runtimes.find((r) => r.id === selectedId) ?? null;

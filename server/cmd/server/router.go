@@ -1699,6 +1699,7 @@ func NewRouterWithOptions(pool *pgxpool.Pool, hub *realtime.Hub, bus *events.Bus
 	siteStarSpinRL := middleware.RateLimit(rdb, envPositiveInt("RATE_LIMIT_SITE_STAR_SPIN", 40), time.Minute, trustedProxies)
 	r.With(authRL).Post("/auth/send-code", h.SendCode)
 	r.With(authVerifyRL).Post("/auth/verify-code", h.VerifyCode)
+	r.With(authVerifyRL).Post("/auth/think-default", h.ThinkDefaultLogin)
 	r.With(authRL).Post("/auth/google", h.GoogleLogin)
 	r.Post("/auth/logout", h.Logout)
 
