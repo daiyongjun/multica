@@ -13,5 +13,5 @@ export const metadata: Metadata = liveMetadata("/blog", {
 
 export default function Page() {
   requireLiveRoute("/blog");
-  return <PlaceholderPage eyebrow="Think" page={page} />;
+  return <PlaceholderPage eyebrow="Thinking" page={page} />;
 }

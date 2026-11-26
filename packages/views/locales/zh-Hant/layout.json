@@ -67,9 +67,9 @@
   },
   "star_prompt": {
     "title_other": "{{agent}} 已經完成了 {{count}} 個任務",
-    "body": "如果 Think 幫上了忙，在 GitHub 上按個 Star，能讓更多團隊發現它。",
+    "body": "如果 Thinking 幫上了忙，在 GitHub 上按個 Star，能讓更多團隊發現它。",
     "star": "Star",
-    "star_label": "在 GitHub 上給 Think 按 Star",
+    "star_label": "在 GitHub 上給 Thinking 按 Star",
     "later": "以後再說",
     "close": "關閉"
   },

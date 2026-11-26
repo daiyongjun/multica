@@ -67,9 +67,9 @@
   },
   "star_prompt": {
     "title_other": "{{agent}} がタスクを {{count}} 件完了しました",
-    "body": "Think がお役に立っていたら、GitHub でスターをお願いします。ほかのチームが Think を見つけやすくなります。",
+    "body": "Thinking がお役に立っていたら、GitHub でスターをお願いします。ほかのチームが Thinking を見つけやすくなります。",
     "star": "Star",
-    "star_label": "GitHub で Think にスターする",
+    "star_label": "GitHub で Thinking にスターする",
     "later": "あとで",
     "close": "閉じる"
   },
