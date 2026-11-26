@@ -83,11 +83,35 @@ describe("bootstrapMika", () => {
     expect(result.chatSession).toBe(session);
   });
 
-  it("never builds an agent payload of its own", async () => {
+  it("normalizes legacy Mika branding to Thinking + brand:thinking on the target workspace", async () => {
+    mocks.updateAgent.mockResolvedValue({
+      ...agent,
+      name: "Thinking",
+      avatar_url: "brand:thinking",
+    });
+
+    const result = await bootstrapMika(input);
+
+    expect(mocks.createAgent).not.toHaveBeenCalled();
+    expect(mocks.updateAgent).toHaveBeenCalledWith(
+      "agent-1",
+      { name: "Thinking", avatar_url: "brand:thinking" },
+      "venus",
+    );
+    expect(result.agent.name).toBe("Thinking");
+    expect(result.agent.avatar_url).toBe("brand:thinking");
+  });
+
+  it("skips updateAgent when the server already provisioned Thinking branding", async () => {
+    mocks.createMikaAgent.mockResolvedValue({
+      ...agent,
+      name: "Thinking",
+      avatar_url: "brand:thinking",
+      onboarding_session: session,
+    });
+
     await bootstrapMika(input);
 
-    // The generic create/update endpoints cannot set system_key, so routing
-    // Mika through them would produce an agent the claim path ignores.
     expect(mocks.createAgent).not.toHaveBeenCalled();
     expect(mocks.updateAgent).not.toHaveBeenCalled();
   });

@@ -26,7 +26,7 @@ import {
   memberNeedsMikaSetup,
   useBootstrapMika,
 } from "@multica/core/onboarding";
-import { MIKA_PLACEHOLDER_EMOJI } from "../../onboarding/components/mika-intro";
+import { MulticaIcon } from "@multica/ui/components/common/multica-icon";
 import {
   useRequiredWorkspaceSlug,
   useWorkspacePaths,
@@ -977,11 +977,13 @@ function MikaSetupCard({
     <>
       <div className="flex flex-col gap-4 rounded-xl border bg-card p-5 sm:flex-row sm:items-center">
         <span
-          role="img"
-          aria-label={t(($) => $.mika_setup.title)}
-          className="flex size-10 shrink-0 select-none items-center justify-center rounded-full bg-muted text-title-lg leading-none"
+          className="flex size-10 shrink-0 select-none items-center justify-center overflow-hidden rounded-full"
         >
-          {MIKA_PLACEHOLDER_EMOJI}
+          <MulticaIcon
+            shape="circle"
+            size={40}
+            title={t(($) => $.mika_setup.title)}
+          />
         </span>
         <div className="min-w-0 flex-1">
           <h2 className="text-body font-semibold">

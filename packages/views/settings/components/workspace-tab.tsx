@@ -338,6 +338,24 @@ export function WorkspaceTab() {
                 disabled={!canManageWorkspace}
                 textIconEnabled
                 ariaLabel={t(($) => $.workspace.change_logo_aria)}
+                onPresetSelected={async (presetValue) => {
+                  try {
+                    const updated = await api.updateWorkspace(workspace.id, {
+                      avatar_url: presetValue,
+                    });
+                    qc.setQueryData(
+                      workspaceKeys.list(),
+                      (old: Workspace[] | undefined) =>
+                        old?.map((ws) => (ws.id === updated.id ? updated : ws)),
+                    );
+                  } catch (error) {
+                    toast.error(
+                      error instanceof Error
+                        ? error.message
+                        : t(($) => $.workspace.toast_logo_failed),
+                    );
+                  }
+                }}
                 onUploaded={async (url) => {
                   try {
                     const updated = await api.updateWorkspace(workspace.id, {

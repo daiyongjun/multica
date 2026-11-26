@@ -50,7 +50,7 @@ describe("AgentNamePicker & embedded quming.hifox.com dialog", () => {
 
     fireEvent.focus(input);
     expect(screen.getByText("甘道夫")).toBeInTheDocument();
-    expect(screen.getByText("HiFox 取名工具")).toBeInTheDocument();
+    expect(screen.getByText("Thinking 取名工具")).toBeInTheDocument();
 
     // Shuffle changes visible suggestions
     fireEvent.click(screen.getByRole("button", { name: "换一批名称" }));
@@ -59,11 +59,11 @@ describe("AgentNamePicker & embedded quming.hifox.com dialog", () => {
     // Clicking a pill sets the name and closes the suggestion card
     fireEvent.click(screen.getByRole("button", { name: "孙悟空" }));
     expect(onChange).toHaveBeenCalledWith("孙悟空");
-    expect(screen.queryByText("HiFox 取名工具")).not.toBeInTheDocument();
+    expect(screen.queryByText("Thinking 取名工具")).not.toBeInTheDocument();
 
     // Clicking the built-in naming tool button opens the modal with quming.hifox.com iframe
     fireEvent.click(screen.getByRole("button", { name: "打开内置取名工具" }));
-    const iframe = await screen.findByTitle("HiFox Agent 取名工具");
+    const iframe = await screen.findByTitle("Thinking 取名工具");
     expect(iframe).toHaveAttribute("src", HIFOX_NAMING_TOOL_URL);
 
     // Entering a name in the modal footer and confirming applies it

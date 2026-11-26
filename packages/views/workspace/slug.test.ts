@@ -83,21 +83,23 @@ describe("nameToWorkspaceSlug", () => {
 });
 
 describe("randomCelestialWorkspaceIdentity", () => {
-  it("picks a celestial name and appends a four-character slug suffix", () => {
+  it("picks a Chinese mythology name, appends a four-character slug suffix, and matches a mythology preset avatar", () => {
     const values = [0, 0, 0.5, 0.999, 0.25];
     let index = 0;
 
     const identity = randomCelestialWorkspaceIdentity(
-      "en",
+      "zh-Hans",
       () => values[index++] ?? 0,
     );
 
-    expect(identity.name).toBe(CELESTIAL_WORKSPACE_NAMES[0]?.names.en);
-    expect(identity.slug).toMatch(/^alpha-centauri-[a-z0-9]{4}$/);
-    expect(identity.slug).toBe("alpha-centauri-as9j");
+    expect(identity.name).toBe("白泽");
+    expect(identity.slug).toMatch(/^baize-[a-z0-9]{4}$/);
+    expect(identity.slug).toBe("baize-as9j");
+    expect(identity.avatarUrl).toBe("preset:myth:M01");
   });
 
-  it("keeps the source list unique", () => {
+  it("keeps the 100-word source list unique", () => {
+    expect(CELESTIAL_WORKSPACE_NAMES.length).toBe(100);
     expect(
       new Set(CELESTIAL_WORKSPACE_NAMES.map(({ slugBase }) => slugBase)).size,
     ).toBe(

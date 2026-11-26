@@ -1,4 +1,6 @@
 import { resolvePublicFileUrl } from "@multica/core/workspace/avatar-url";
+import { PresetAvatarGlyph } from "@multica/ui/components/common/preset-avatar-glyph";
+import { parsePresetAvatar } from "@multica/ui/lib/avatar-presets";
 import { cn } from "@multica/ui/lib/utils";
 
 const sizeMap = {
@@ -27,6 +29,21 @@ interface WorkspaceAvatarProps {
 }
 
 function WorkspaceAvatar({ name, avatarUrl, size = "sm", radius = "circle", className }: WorkspaceAvatarProps) {
+  const preset = parsePresetAvatar(avatarUrl);
+  if (preset) {
+    return (
+      <span
+        className={cn(
+          "inline-flex shrink-0 items-center justify-center overflow-hidden border",
+          sizeMap[size],
+          className,
+          radiusMap[radius],
+        )}
+      >
+        <PresetAvatarGlyph value={avatarUrl} alt={name} />
+      </span>
+    );
+  }
   const resolvedUrl = resolvePublicFileUrl(avatarUrl);
   // The radius goes last so a call-site `className` can't override the shape;
   // pick a fallback with `radius` instead.
@@ -45,7 +62,7 @@ function WorkspaceAvatar({ name, avatarUrl, size = "sm", radius = "circle", clas
         "inline-flex shrink-0 items-center justify-center border bg-muted font-semibold text-muted-foreground",
         sizeMap[size],
         className,
-        radiusMap[radius]
+        radiusMap[radius],
       )}
     >
       {name.charAt(0).toUpperCase()}

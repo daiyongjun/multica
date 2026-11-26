@@ -1,5 +1,6 @@
 import { pinyin } from "pinyin-pro";
 import type { SupportedLocale } from "@multica/core/i18n";
+import { findMythologyPresetBySlug } from "@multica/ui/lib/avatar-presets";
 import { CELESTIAL_WORKSPACE_NAMES } from "./celestial-workspace-names";
 
 export const WORKSPACE_SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -80,15 +81,16 @@ export function nameToWorkspaceSlug(
 }
 
 /**
- * Generates a localized workspace name while keeping its URL based on the
- * stable English slug. The server's unique slug constraint remains the final
- * authority if two users ever generate the same candidate.
+ * Generates a localized Chinese Ancient Mythology workspace/project name,
+ * stable slug, and matched mythology preset avatar. The server's unique slug
+ * constraint remains the final authority if two users ever generate the same
+ * candidate.
  */
 export function randomCelestialWorkspaceIdentity(
   locale: SupportedLocale,
   random: () => number = Math.random,
-): { name: string; slug: string } {
-  const celestial =
+): { name: string; slug: string; avatarUrl: string } {
+  const entry =
     CELESTIAL_WORKSPACE_NAMES[
       Math.floor(random() * CELESTIAL_WORKSPACE_NAMES.length)
     ]!;
@@ -102,10 +104,13 @@ export function randomCelestialWorkspaceIdentity(
   }
 
   return {
-    name: celestial.names[locale],
-    slug: `${celestial.slugBase}-${suffix}`,
+    name: entry.names[locale],
+    slug: `${entry.slugBase}-${suffix}`,
+    avatarUrl: findMythologyPresetBySlug(entry.slugBase).value,
   };
 }
+
+export const randomMythologyWorkspaceIdentity = randomCelestialWorkspaceIdentity;
 
 export function isWorkspaceSlugConflict(error: unknown): boolean {
   return (

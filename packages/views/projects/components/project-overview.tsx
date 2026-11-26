@@ -6,7 +6,6 @@ import { Button } from "@multica/ui/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@multica/ui/components/ui/tabs";
 import { TooltipHint } from "@multica/ui/components/common/tooltip-hint";
 import { cn } from "@multica/ui/lib/utils";
-import { EmojiPicker } from "@multica/ui/components/common/emoji-picker";
 import { Popover, PopoverContent, PopoverTrigger } from "@multica/ui/components/ui/popover";
 import {
   DropdownMenu,
@@ -21,6 +20,7 @@ import { TitleEditor, ContentEditor, ReadonlyContent } from "../../editor";
 import { useT } from "../../i18n";
 import { ProjectIcon } from "./project-icon";
 import { ProjectResourcesSection } from "./project-resources-section";
+import { MythologyIconPicker } from "../../common/mythology-icon-picker";
 
 const TAB_TRIGGER_CLASS = "h-full rounded-none px-2.5 group-data-horizontal/tabs:after:bottom-0";
 
@@ -125,7 +125,7 @@ export function ProjectOverviewBody({
         <div className={cn(OBJECT_PAGE_BODY, "space-y-8")}>
           <div className="flex items-center gap-3">
             <div className="flex size-12 shrink-0 items-center justify-center rounded-xl border bg-muted/50 text-2xl">
-              {project.icon || "📁"}
+              <ProjectIcon project={project} size="lg" className="size-8" />
             </div>
             <h2 className="min-w-0 flex-1 text-title font-semibold">{project.title}</h2>
           </div>
@@ -155,15 +155,16 @@ export function ProjectOverviewBody({
                     className="flex size-12 shrink-0 cursor-pointer items-center justify-center rounded-xl border bg-muted/50 text-2xl transition-colors hover:bg-accent"
                     aria-label={t(($) => $.detail.icon_tooltip)}
                   >
-                    {project.icon || "📁"}
+                    <ProjectIcon project={project} size="lg" className="size-8" />
                   </button>
                 }
               />
             </TooltipHint>
             <PopoverContent align="start" className="w-auto p-0">
-              <EmojiPicker
-                onSelect={(emoji) => {
-                  onUpdate({ icon: emoji });
+              <MythologyIconPicker
+                value={project.icon}
+                onSelect={(iconValue) => {
+                  onUpdate({ icon: iconValue });
                   setIconPickerOpen(false);
                 }}
               />

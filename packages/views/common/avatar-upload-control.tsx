@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, lazy, useRef, useState } from "react";
-import { Bot, Camera, ImagePlus, Loader2, Type, Users, X } from "@multica/ui/icons";
+import { Bot, Camera, Dices, ImagePlus, Loader2, Type, Users, X } from "@multica/ui/icons";
 import { toast } from "sonner";
 import { api } from "@multica/core/api";
 import { useFileUpload } from "@multica/core/hooks/use-file-upload";
@@ -11,6 +11,15 @@ import {
   formatAvatarEmoji,
   parseAvatarEmoji,
 } from "@multica/ui/lib/avatar-emoji";
+import {
+  AGENT_AVATAR_PRESETS,
+  AGENT_AVATAR_SERIES,
+  THINKING_BRAND_AVATAR,
+  parsePresetAvatar,
+  pickRandomAgentPreset,
+  type AgentAvatarSeriesId,
+} from "@multica/ui/lib/avatar-presets";
+import { PresetAvatarGlyph } from "@multica/ui/components/common/preset-avatar-glyph";
 import {
   Popover,
   PopoverContent,
@@ -23,6 +32,7 @@ import { cn } from "@multica/ui/lib/utils";
 import { useStorageLimitToast } from "../billing/storage-limit-notice";
 import { useT } from "../i18n";
 import { AvatarCropDialog } from "./avatar-crop-dialog";
+import { MythologyAvatarGrid } from "./mythology-icon-picker";
 import { TextAvatarDialog } from "./text-avatar-dialog";
 
 // The full emoji-mart picker is ~1MB of emoji data. Only the handful of
@@ -60,6 +70,11 @@ interface AvatarUploadControlProps {
    * way. Omit it and the control keeps its click-straight-to-upload behavior.
    */
   onEmojiSelected?: (value: string) => void | Promise<unknown>;
+  /**
+   * When provided for workspace avatars, offers the curated Chinese Ancient
+   * Mythology preset library (`preset:myth:M01`–`M60`) inside the picker.
+   */
+  onPresetSelected?: (value: string) => void | Promise<unknown>;
   /**
    * Offers a "Text icon" entry next to the upload: 1–2 typed characters on a
    * preset color, drawn into a PNG and saved through the same upload +
@@ -151,6 +166,7 @@ export function AvatarUploadControl({
   disabled = false,
   onUploaded,
   onEmojiSelected,
+  onPresetSelected,
   textIconEnabled = false,
   onClear,
   className,
@@ -168,14 +184,18 @@ export function AvatarUploadControl({
   const [pickerOpen, setPickerOpen] = useState(false);
   const [emojiSearchOpen, setEmojiSearchOpen] = useState(false);
   const [textDialogOpen, setTextDialogOpen] = useState(false);
+  const [agentSeries, setAgentSeries] = useState<AgentAvatarSeriesId>("porcelain");
 
   const emoji = parseAvatarEmoji(value);
-  const resolved = value && !emoji ? resolvePublicFileUrl(value) : null;
+  const preset = parsePresetAvatar(value);
+  const resolved = value && !emoji && !preset ? resolvePublicFileUrl(value) : null;
   const hasImage = !!resolved && !previewError;
-  const hasAvatar = !!emoji || hasImage;
+  const hasAvatar = !!emoji || !!preset || hasImage;
   const emojiEnabled = !!onEmojiSelected;
+  const agentPresetsEnabled = variant === "agent" && (!!onPresetSelected || !!onEmojiSelected);
+  const mythologyPresetsEnabled = variant === "workspace" && !!onPresetSelected;
   // Any alternative to an image turns the click into a menu.
-  const menuEnabled = emojiEnabled || textIconEnabled;
+  const menuEnabled = emojiEnabled || textIconEnabled || !!onPresetSelected;
 
   const openFileDialog = () => fileInputRef.current?.click();
 
@@ -259,6 +279,22 @@ export function AvatarUploadControl({
     }
   };
 
+  const handlePresetSelected = async (presetValue: string) => {
+    closePicker();
+    setPreviewError(false);
+    setBusy(true);
+    try {
+      const save = onPresetSelected ?? onEmojiSelected;
+      await persistedByCaller(() => save?.(presetValue));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const agentSeriesItems = agentPresetsEnabled
+    ? AGENT_AVATAR_PRESETS.filter((item) => item.series === agentSeries)
+    : [];
+
   const avatarButton = (
     <button
       type="button"
@@ -278,7 +314,9 @@ export function AvatarUploadControl({
       )}
       style={{ width: size, height: size }}
     >
-      {emoji ? (
+      {preset ? (
+        <PresetAvatarGlyph value={value} alt={name} />
+      ) : emoji ? (
         <span
           role="img"
           aria-label={name}
@@ -324,7 +362,13 @@ export function AvatarUploadControl({
             // laid out against the popover's own width.
             className={cn(
               "gap-0 p-0",
-              emojiSearchOpen ? "w-auto" : emojiEnabled ? "w-72" : "w-48",
+              emojiSearchOpen
+                ? "w-auto"
+                : agentPresetsEnabled || mythologyPresetsEnabled
+                  ? "w-[344px]"
+                  : emojiEnabled
+                    ? "w-72"
+                    : "w-48",
             )}
           >
             {emojiSearchOpen ? (
@@ -365,6 +409,104 @@ export function AvatarUploadControl({
                     </button>
                   )}
                 </div>
+
+                {agentPresetsEnabled && (
+                  <>
+                    <Separator />
+                    <div className="flex flex-col gap-2 p-2">
+                      <div className="flex items-center justify-between gap-1">
+                        <span className="text-caption font-medium text-muted-foreground">
+                          Agent 预设头像 (100)
+                        </span>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => handlePresetSelected(THINKING_BRAND_AVATAR)}
+                            aria-pressed={value === THINKING_BRAND_AVATAR}
+                            title="使用 Thinking 品牌图标"
+                            className={cn(
+                              "inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-caption transition-colors hover:bg-accent",
+                              value === THINKING_BRAND_AVATAR
+                                ? "border-ring bg-accent text-foreground"
+                                : "text-muted-foreground hover:text-foreground",
+                            )}
+                          >
+                            <span className="size-3.5 overflow-hidden rounded-full">
+                              <PresetAvatarGlyph value={THINKING_BRAND_AVATAR} />
+                            </span>
+                            <span>Thinking</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handlePresetSelected(pickRandomAgentPreset(value).value)
+                            }
+                            className="inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-caption text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                            title="随机挑选一个 Agent 头像"
+                          >
+                            <Dices className="size-3.5" />
+                            <span>随机</span>
+                          </button>
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-1">
+                        {AGENT_AVATAR_SERIES.map((tab) => (
+                          <button
+                            key={tab.id}
+                            type="button"
+                            onClick={() => setAgentSeries(tab.id)}
+                            className={cn(
+                              "rounded-md px-2 py-0.5 text-caption font-medium transition-colors",
+                              agentSeries === tab.id
+                                ? "bg-foreground text-background"
+                                : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                            )}
+                          >
+                            {tab.label}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="grid max-h-48 grid-cols-5 gap-1.5 overflow-y-auto pr-0.5">
+                        {agentSeriesItems.map((item) => {
+                          const active = value === item.value;
+                          return (
+                            <button
+                              key={item.id}
+                              type="button"
+                              title={`${item.label} (#${item.id})`}
+                              aria-label={item.label}
+                              aria-pressed={active}
+                              onClick={() => handlePresetSelected(item.value)}
+                              className={cn(
+                                "group flex flex-col items-center gap-0.5 rounded-lg p-1 transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                                active && "bg-accent ring-1 ring-ring",
+                              )}
+                            >
+                              <span className="flex size-10 items-center justify-center overflow-hidden rounded-full shadow-xs">
+                                <PresetAvatarGlyph value={item.value} alt={item.label} />
+                              </span>
+                              <span className="max-w-full truncate text-[10px] leading-tight text-muted-foreground group-hover:text-foreground">
+                                {item.label}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {mythologyPresetsEnabled && (
+                  <>
+                    <Separator />
+                    <MythologyAvatarGrid
+                      selectedValue={value}
+                      onSelect={handlePresetSelected}
+                      columns={5}
+                      compact
+                    />
+                  </>
+                )}
 
                 {emojiEnabled && (
                   <>

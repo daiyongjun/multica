@@ -9,7 +9,9 @@ import {
   type AvatarSize,
 } from "@multica/ui/lib/avatar-size";
 import { parseAvatarEmoji } from "@multica/ui/lib/avatar-emoji";
+import { parsePresetAvatar } from "@multica/ui/lib/avatar-presets";
 import { MulticaIcon } from "./multica-icon";
+import { PresetAvatarGlyph } from "./preset-avatar-glyph";
 
 interface ActorAvatarProps {
   name: string;
@@ -40,7 +42,8 @@ function ActorAvatar({
   const diameter = `var(--avatar-slot-size, ${AVATAR_SIZE_PX[size]}px)`;
   const scaled = (ratio: number) => `calc(${diameter} * ${ratio})`;
   const emoji = parseAvatarEmoji(avatarUrl);
-  const showsSystemMark = isSystem && !emoji && (!avatarUrl || imgError);
+  const preset = parsePresetAvatar(avatarUrl);
+  const showsSystemMark = isSystem && !emoji && !preset && (!avatarUrl || imgError);
 
   useEffect(() => {
     setImgError(false);
@@ -61,7 +64,7 @@ function ActorAvatar({
         // colour keeps it whole when a theme squares the avatar.
         showsSystemMark
           ? "bg-multica-ink dark:bg-multica-paper"
-          : (!avatarUrl || emoji || imgError) && "bg-muted text-muted-foreground",
+          : (!avatarUrl || emoji || imgError) && !preset && "bg-muted text-muted-foreground",
         className,
         // rounded-avatar stays last so a call-site `className` can never
         // override the shape — it is the theme's choice, not a per-site one.
@@ -69,7 +72,9 @@ function ActorAvatar({
       )}
       style={{ width: diameter, height: diameter, fontSize: scaled(0.45) }}
     >
-      {emoji ? (
+      {preset ? (
+        <PresetAvatarGlyph value={avatarUrl} alt={name} />
+      ) : emoji ? (
         <span
           role="img"
           aria-label={name}

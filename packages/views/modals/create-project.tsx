@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { CalendarClock, CalendarDays, ChevronRight, FolderOpen, GitBranch, Maximize2, Minimize2, MoreHorizontal, Pencil, Search, X as XIcon, User, UserMinus } from "@multica/ui/icons";
+import { CalendarClock, CalendarDays, ChevronRight, Dices, FolderOpen, GitBranch, Maximize2, Minimize2, MoreHorizontal, Pencil, Search, X as XIcon, User, UserMinus } from "@multica/ui/icons";
 
 /**
  * GitHub mark — lucide-react v1 dropped brand icons, so we inline the
@@ -48,10 +48,13 @@ import { Popover, PopoverTrigger, PopoverContent } from "@multica/ui/components/
 import { Tooltip, TooltipTrigger, TooltipContent } from "@multica/ui/components/ui/tooltip";
 import { TooltipHint } from "@multica/ui/components/common/tooltip-hint";
 import { Button } from "@multica/ui/components/ui/button";
-import { EmojiPicker } from "@multica/ui/components/common/emoji-picker";
+import { matchLocale } from "@multica/core/i18n";
 import { ContentEditor, type ContentEditorRef, TitleEditor } from "../editor";
 import { PriorityIcon } from "../issues/components/priority-icon";
 import { ActorAvatar } from "../common/actor-avatar";
+import { MythologyIconPicker } from "../common/mythology-icon-picker";
+import { ProjectIcon } from "../projects/components/project-icon";
+import { randomCelestialWorkspaceIdentity } from "../workspace/slug";
 import { useNavigation } from "../navigation";
 import { useT } from "../i18n";
 import { matchesPinyin } from "../editor/extensions/pinyin-match";
@@ -151,7 +154,8 @@ export function CreateProjectModal({
   onClose: () => void;
   data?: Record<string, unknown> | null;
 }) {
-  const { t } = useT("modals");
+  const { t, i18n } = useT("modals");
+  const locale = matchLocale([i18n.resolvedLanguage ?? i18n.language]);
   // The execution-mode copy lives in the projects namespace alongside the
   // resource panel's, so both entry points describe the choice identically.
   const { t: tProjects } = useT("projects");
@@ -171,6 +175,7 @@ export function CreateProjectModal({
   const clearDraft = useProjectDraftStore((s) => s.clearDraft);
 
   const [title, setTitle] = useState(draft.title);
+  const [titleSeed, setTitleSeed] = useState(0);
   const descEditorRef = useRef<ContentEditorRef>(null);
   const [status, setStatus] = useState<ProjectStatus>(draft.status);
   const [priority, setPriority] = useState<ProjectPriority>(draft.priority);
@@ -557,32 +562,51 @@ export function CreateProjectModal({
         </div>
 
         <div className="px-5 pb-2 shrink-0">
-          <Popover open={iconPickerOpen} onOpenChange={setIconPickerOpen}>
-            <TooltipHint label={t(($) => $.create_project.icon_tooltip)}>
-              <PopoverTrigger
-                render={
-                  <button
-                    type="button"
-                    className="text-display-sm cursor-pointer rounded-lg p-1 -ml-1 hover:bg-accent/60 transition-colors"
-                    aria-label={t(($) => $.create_project.icon_tooltip)}
-                  >
-                    {icon || "📁"}
-                  </button>
-                }
-              />
-            </TooltipHint>
-            <PopoverContent align="start" className="w-auto p-0">
-              <EmojiPicker
-                onSelect={(emoji) => {
-                  updateIcon(emoji);
-                  setIconPickerOpen(false);
-                }}
-              />
-            </PopoverContent>
-          </Popover>
+          <div className="flex items-center justify-between gap-2">
+            <Popover open={iconPickerOpen} onOpenChange={setIconPickerOpen}>
+              <TooltipHint label={t(($) => $.create_project.icon_tooltip)}>
+                <PopoverTrigger
+                  render={
+                    <button
+                      type="button"
+                      className="flex size-9 cursor-pointer items-center justify-center rounded-lg p-1 -ml-1 text-display-sm transition-colors hover:bg-accent/60"
+                      aria-label={t(($) => $.create_project.icon_tooltip)}
+                    >
+                      <ProjectIcon project={{ icon: icon ?? null }} size="lg" className="size-7" />
+                    </button>
+                  }
+                />
+              </TooltipHint>
+              <PopoverContent align="start" className="w-auto p-0">
+                <MythologyIconPicker
+                  value={icon}
+                  onSelect={(picked) => {
+                    updateIcon(picked);
+                    setIconPickerOpen(false);
+                  }}
+                />
+              </PopoverContent>
+            </Popover>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const picked = randomCelestialWorkspaceIdentity(locale);
+                updateTitle(picked.name);
+                updateIcon(picked.avatarUrl);
+                setTitleSeed((n) => n + 1);
+              }}
+              className="h-7 gap-1 px-2 text-caption"
+            >
+              <Dices className="size-3.5" />
+              <span>随机神话名</span>
+            </Button>
+          </div>
           <TitleEditor
+            key={titleSeed}
             autoFocus
-            defaultValue={draft.title}
+            defaultValue={title}
             placeholder={t(($) => $.create_project.title_placeholder)}
             className="text-title font-semibold"
             onChange={(v) => updateTitle(v)}

@@ -303,7 +303,7 @@ export function AgentNameSuggestionCard({
             onClick={onOpenNamingTool}
             className="inline-flex cursor-pointer items-center gap-1 font-medium text-foreground underline decoration-foreground/35 underline-offset-4 transition-colors hover:decoration-foreground"
           >
-            <span>HiFox 取名工具</span>
+            <span>Thinking 取名工具</span>
           </button>
           <span className="rounded-full border border-surface-border bg-surface-raised px-1.5 py-0.5 text-[10px] leading-none text-muted-foreground">
             内置选名
@@ -430,7 +430,7 @@ export function AgentNamingToolModal({
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <DialogTitle className="truncate text-body font-semibold">
-                  HiFox 智能体取名工具
+                  Thinking 取名工具
                 </DialogTitle>
                 <span className="hidden items-center gap-1 rounded-full border border-surface-border bg-muted/40 px-2 py-0.5 text-[11px] text-muted-foreground sm:inline-flex">
                   <Globe className="size-3" />
@@ -488,7 +488,7 @@ export function AgentNamingToolModal({
           <iframe
             key={reloadKey}
             src={HIFOX_NAMING_TOOL_URL}
-            title="HiFox Agent 取名工具"
+            title="Thinking 取名工具"
             allow="clipboard-write; clipboard-read"
             onLoad={() => setLoaded(true)}
             className="h-full w-full border-0 bg-white"

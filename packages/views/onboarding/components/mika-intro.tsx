@@ -7,11 +7,10 @@ import {
   ItemMedia,
   ItemTitle,
 } from "@multica/ui/components/ui/item";
+import { MulticaIcon } from "@multica/ui/components/common/multica-icon";
 import { useT } from "../../i18n";
 
-/** Mirrors `mikaAgentAvatarURL` in server/internal/handler/mika_agent.go.
- *  Placeholder until Mika has real artwork — these two must move together or
- *  onboarding shows one face and the created agent another. */
+/** Mirrors `mikaAgentAvatarURL` in server/internal/handler/mika_agent.go. */
 export const MIKA_PLACEHOLDER_EMOJI = "🦄";
 import { StepHeading } from "./step-shell";
 
@@ -38,11 +37,13 @@ export function MikaIntro() {
       <Item variant="outline">
         <ItemMedia>
           <span
-            role="img"
-            aria-label={t(($) => $.mika_intro.name)}
-            className="flex size-9 shrink-0 select-none items-center justify-center rounded-full bg-muted text-title leading-none"
+            className="flex size-9 shrink-0 select-none items-center justify-center overflow-hidden rounded-full"
           >
-            {MIKA_PLACEHOLDER_EMOJI}
+            <MulticaIcon
+              shape="circle"
+              size={36}
+              title={t(($) => $.mika_intro.name)}
+            />
           </span>
         </ItemMedia>
         <ItemContent>

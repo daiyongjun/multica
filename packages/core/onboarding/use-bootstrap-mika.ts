@@ -38,6 +38,9 @@ export interface BootstrapMikaResult {
  * decided here; the server owns it, which is why this can no longer drift from
  * the product definition the way a client-built payload could.
  */
+const DEFAULT_PRESET_AGENT_NAME = "Thinking";
+const DEFAULT_PRESET_AGENT_AVATAR = "brand:thinking";
+
 export async function bootstrapMika(
   input: BootstrapMikaInput,
 ): Promise<
@@ -45,7 +48,7 @@ export async function bootstrapMika(
     kickoff: Awaited<ReturnType<typeof api.startMikaOnboarding>>;
   }
 > {
-  const agent = await api.createMikaAgent(
+  let agent = await api.createMikaAgent(
     {
       runtime_id: input.runtimeId,
       language: input.language,
@@ -54,6 +57,32 @@ export async function bootstrapMika(
     },
     input.workspaceSlug,
   );
+
+  // Ensure the default workspace preset agent is branded as Thinking with the
+  // #T16 brand icon even when connected to an older server binary that still
+  // seeds "Mika" + "emoji:🦄".
+  const needsDefaultBranding =
+    agent.name === "Mika" ||
+    !agent.avatar_url ||
+    agent.avatar_url === "emoji:🦄";
+  if (needsDefaultBranding && typeof api.updateAgent === "function") {
+    try {
+      const updated = await api.updateAgent(
+        agent.id,
+        {
+          name: agent.name === "Mika" ? DEFAULT_PRESET_AGENT_NAME : agent.name,
+          avatar_url:
+            !agent.avatar_url || agent.avatar_url === "emoji:🦄"
+              ? DEFAULT_PRESET_AGENT_AVATAR
+              : agent.avatar_url,
+        },
+        input.workspaceSlug,
+      );
+      agent = { ...agent, ...updated };
+    } catch {
+      // Non-fatal: keep the newly provisioned agent if branding patch fails.
+    }
+  }
 
   // The server resolves agent and session together. This used to list the
   // member's sessions and create one when it saw no title match — a

@@ -1,4 +1,6 @@
 import type { Project } from "@multica/core/types";
+import { PresetAvatarGlyph } from "@multica/ui/components/common/preset-avatar-glyph";
+import { parsePresetAvatar } from "@multica/ui/lib/avatar-presets";
 import { cn } from "@multica/ui/lib/utils";
 
 export type ProjectIconSize = "sm" | "md" | "lg";
@@ -16,6 +18,22 @@ const SIZE_CLASS: Record<ProjectIconSize, string> = {
 };
 
 export function ProjectIcon({ project, size = "sm", className }: ProjectIconProps) {
+  const preset = parsePresetAvatar(project?.icon);
+  if (preset) {
+    return (
+      <span
+        aria-hidden="true"
+        className={cn(
+          "inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full",
+          SIZE_CLASS[size],
+          className,
+        )}
+      >
+        <PresetAvatarGlyph value={project?.icon} />
+      </span>
+    );
+  }
+
   return (
     <span
       aria-hidden="true"

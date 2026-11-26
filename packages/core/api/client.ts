@@ -2404,10 +2404,15 @@ export class ApiClient {
     );
   }
 
-  async updateAgent(id: string, data: UpdateAgentRequest): Promise<Agent> {
+  async updateAgent(
+    id: string,
+    data: UpdateAgentRequest,
+    workspaceSlug?: string,
+  ): Promise<Agent> {
     assertAgentConversationStartersWriteSupported(data);
     return this.fetch(`/api/agents/${id}`, {
       method: "PUT",
+      headers: workspaceHeader(workspaceSlug),
       body: JSON.stringify(data),
     });
   }

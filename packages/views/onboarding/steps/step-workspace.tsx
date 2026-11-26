@@ -6,6 +6,11 @@ import { toast } from "sonner";
 import { Button } from "@multica/ui/components/ui/button";
 import { Input } from "@multica/ui/components/ui/input";
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@multica/ui/components/ui/popover";
+import {
   Field,
   FieldDescription,
   FieldError,
@@ -13,6 +18,7 @@ import {
   FieldLabel,
 } from "@multica/ui/components/ui/field";
 import { cn } from "@multica/ui/lib/utils";
+import { api } from "@multica/core/api";
 import { useCreateWorkspace } from "@multica/core/workspace/mutations";
 import type { Workspace } from "@multica/core/types";
 import { isImeComposing } from "@multica/core/utils";
@@ -26,6 +32,7 @@ import {
 } from "../components/step-shell";
 import { RadioMark } from "../components/option-card";
 import { WorkspaceAvatar } from "../../workspace/workspace-avatar";
+import { MythologyAvatarGrid } from "../../common/mythology-icon-picker";
 import { useT } from "../../i18n";
 import {
   WORKSPACE_SLUG_REGEX,
@@ -131,6 +138,8 @@ export function StepWorkspace({
   // the footer CTA can read `canCreate` and trigger `handleCreate`.
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [avatarPickerOpen, setAvatarPickerOpen] = useState(false);
   const [slugServerError, setSlugServerError] = useState<string | null>(null);
   const slugTouched = useRef(false);
   // Prefix follows the slug the same way the slug follows the name, and stops
@@ -192,6 +201,7 @@ export function StepWorkspace({
     const identity = randomCelestialWorkspaceIdentity(locale);
     slugTouched.current = true;
     setName(identity.name);
+    setAvatarUrl(identity.avatarUrl);
     applySlug(identity.slug);
   };
 
@@ -199,6 +209,7 @@ export function StepWorkspace({
 
   const handleCreate = () => {
     if (!canCreate || createWorkspace.isPending) return;
+    const chosenAvatar = avatarUrl;
     createWorkspace.mutate(
       {
         name: name.trim(),
@@ -210,7 +221,20 @@ export function StepWorkspace({
         issue_prefix: effectivePrefix,
       },
       {
-        onSuccess: onCreated,
+        onSuccess: async (created) => {
+          if (chosenAvatar) {
+            try {
+              const updated = await api.updateWorkspace(created.id, {
+                avatar_url: chosenAvatar,
+              });
+              await onCreated(updated);
+              return;
+            } catch {
+              // Non-fatal: proceed with the created workspace even if avatar update fails.
+            }
+          }
+          await onCreated(created);
+        },
         onError: (error) => {
           if (isWorkspaceSlugConflict(error)) {
             setSlugServerError(t(($) => $.step_workspace.slug_taken_error));
@@ -293,6 +317,35 @@ export function StepWorkspace({
           {t(($) => $.step_workspace.name_label)}
         </FieldLabel>
         <div className="flex items-center gap-2">
+          <Popover open={avatarPickerOpen} onOpenChange={setAvatarPickerOpen}>
+            <PopoverTrigger
+              render={
+                <button
+                  type="button"
+                  disabled={isCreating}
+                  aria-label="选择神话预设头像"
+                  title="选择中国古代神话预设头像"
+                  className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full border border-input bg-background transition-colors hover:border-foreground/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <WorkspaceAvatar
+                    name={name.trim() || "T"}
+                    avatarUrl={avatarUrl}
+                    size="lg"
+                    className="border-0"
+                  />
+                </button>
+              }
+            />
+            <PopoverContent align="start" className="w-[336px] p-0">
+              <MythologyAvatarGrid
+                selectedValue={avatarUrl}
+                onSelect={(picked) => {
+                  setAvatarUrl(picked);
+                  setAvatarPickerOpen(false);
+                }}
+              />
+            </PopoverContent>
+          </Popover>
           <Input
             id="ws-name"
             autoFocus
