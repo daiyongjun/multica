@@ -177,7 +177,7 @@ export function RailWorkspaces() {
               name={current.name}
               avatarUrl={current.avatar_url}
               radius="lg"
-              className="h-[34px] w-[34px] border-surface-border bg-surface-raised text-[15px] leading-none font-medium text-foreground antialiased"
+              className="h-[36px] w-[36px] border border-[#D4DCF0] bg-gradient-to-b from-white via-[#F6F8FD] to-[#EAEFF9] text-[15px] leading-none font-semibold text-[#1E2547] shadow-[0_2px_6px_rgba(30,37,71,0.09),inset_0_1px_0_rgba(255,255,255,0.95)] antialiased transition-all duration-150 hover:border-[#818CF8]/60 hover:shadow-[0_3px_10px_rgba(79,70,229,0.16)] dark:border-white/15 dark:from-[#23273B] dark:via-[#171A28] dark:to-[#10121D] dark:text-[#F1F5F9] dark:shadow-[0_2px_10px_rgba(0,0,0,0.42),inset_0_1px_0_rgba(255,255,255,0.14)] dark:hover:border-[#818CF8]/45"
             />
             {(otherUnread || invitations.length > 0) && (
               <UnreadDot className="absolute -top-0.5 -right-0.5 ring-2 ring-app-shell" />

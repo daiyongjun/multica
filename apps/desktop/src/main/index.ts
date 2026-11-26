@@ -5,6 +5,7 @@ import {
   dialog,
   ipcMain,
   nativeImage,
+  nativeTheme,
   Notification,
   screen,
 } from "electron";
@@ -133,6 +134,29 @@ const BUNDLED_ICON_PATH = join(__dirname, "../../resources/icon.png").replace(
   "app.asar",
   "app.asar.unpacked",
 );
+const BUNDLED_ICON_LIGHT_PATH = join(__dirname, "../../resources/icon-light.png").replace(
+  "app.asar",
+  "app.asar.unpacked",
+);
+const BUNDLED_ICON_DARK_PATH = join(__dirname, "../../resources/icon-dark.png").replace(
+  "app.asar",
+  "app.asar.unpacked",
+);
+
+let lastAppliedDockAppearance: "light" | "dark" | null = null;
+function applyDockIconForAppearance(mode: "light" | "dark"): void {
+  if (process.platform !== "darwin" || !app.dock) return;
+  if (lastAppliedDockAppearance === mode) return;
+  const targetPath = mode === "light" ? BUNDLED_ICON_LIGHT_PATH : BUNDLED_ICON_DARK_PATH;
+  const icon = nativeImage.createFromPath(targetPath);
+  if (!icon.isEmpty()) {
+    app.dock.setIcon(icon);
+    lastAppliedDockAppearance = mode;
+  } else {
+    const fallback = nativeImage.createFromPath(BUNDLED_ICON_PATH);
+    if (!fallback.isEmpty()) app.dock.setIcon(fallback);
+  }
+}
 
 // macOS/Linux GUI launches inherit a minimal PATH from launchd that omits
 // the user's shell config (~/.zshrc, Homebrew, nvm, ~/.local/bin, etc.).
@@ -810,12 +834,13 @@ if (!gotTheLock) {
       is.dev ? "ai.multica.desktop.dev" : "ai.multica.desktop",
     );
 
-    // macOS: replace the default Electron dock icon with the bundled logo
-    // so the Canary dev build is visually distinct from a stock Electron
-    // run. `app.dock` is macOS-only — guard the call.
-    if (is.dev && process.platform === "darwin" && app.dock) {
-      const icon = nativeImage.createFromPath(BUNDLED_ICON_PATH);
-      if (!icon.isEmpty()) app.dock.setIcon(icon);
+    // macOS: apply theme-matched Thinking Dock icon (Light / Dark) and follow
+    // OS theme changes until the renderer reports an explicit theme choice.
+    if (process.platform === "darwin" && app.dock) {
+      applyDockIconForAppearance(nativeTheme.shouldUseDarkColors ? "dark" : "light");
+      nativeTheme.on("updated", () => {
+        applyDockIconForAppearance(nativeTheme.shouldUseDarkColors ? "dark" : "light");
+      });
     }
 
     app.on("browser-window-created", (_, window) => {
@@ -1083,6 +1108,12 @@ if (!gotTheLock) {
 
     ipcMain.on("locale:set", (_event, rawLocale: unknown) => {
       setAppDialogLocale(typeof rawLocale === "string" ? rawLocale : null);
+    });
+
+    ipcMain.on("theme:set-appearance", (_event, rawMode: unknown) => {
+      if (rawMode === "light" || rawMode === "dark") {
+        applyDockIconForAppearance(rawMode);
+      }
     });
 
     desktopInitialized = true;

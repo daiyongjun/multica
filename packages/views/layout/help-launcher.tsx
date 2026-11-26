@@ -5,13 +5,13 @@ import { useQuery } from "@tanstack/react-query";
 import {
   ArrowUpRight,
   BookOpen,
-  CircleHelp,
   Download,
   History,
   Megaphone,
   MessageCircle,
   Star,
 } from "@multica/ui/icons";
+import { ThinkingHelpIcon } from "./thinking-rail-icons";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -65,7 +65,7 @@ export function HelpLauncher() {
             aria-label={t(($) => $.help.trigger)}
             className={RAIL_ICON_BUTTON_CLASS}
           >
-            <CircleHelp />
+            <ThinkingHelpIcon />
           </DropdownMenuTrigger>
         </TooltipHint>
         <DropdownMenuContent

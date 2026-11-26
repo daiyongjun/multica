@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <defs>
+    <linearGradient id="tk-dark-bg" x1="16%" y1="4%" x2="84%" y2="96%">
+      <stop offset="0%" stop-color="#1B1E2E"/>
+      <stop offset="50%" stop-color="#0F111B"/>
+      <stop offset="100%" stop-color="#07080E"/>
+    </linearGradient>
+    <radialGradient id="tk-dark-aura" cx="50%" cy="46%" r="50%">
+      <stop offset="0%" stop-color="#6366F1" stop-opacity="0.34"/>
+      <stop offset="48%" stop-color="#4F46E5" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#07080E" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="tk-dark-rim" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.28"/>
+      <stop offset="38%" stop-color="#818CF8" stop-opacity="0.16"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0.06"/>
+    </linearGradient>
+    <linearGradient id="tk-dark-arc-a" x1="18%" y1="18%" x2="82%" y2="48%">
+      <stop offset="0%" stop-color="#F8FAFC"/>
+      <stop offset="55%" stop-color="#A5B4FC"/>
+      <stop offset="100%" stop-color="#6366F1" stop-opacity="0.28"/>
+    </linearGradient>
+    <linearGradient id="tk-dark-arc-b" x1="82%" y1="82%" x2="18%" y2="52%">
+      <stop offset="0%" stop-color="#E2E8F0"/>
+      <stop offset="55%" stop-color="#7DD3FC"/>
+      <stop offset="100%" stop-color="#38BDF8" stop-opacity="0.28"/>
+    </linearGradient>
+    <linearGradient id="tk-dark-star" x1="22%" y1="18%" x2="80%" y2="84%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="48%" stop-color="#C7D2FE"/>
+      <stop offset="100%" stop-color="#818CF8"/>
+    </linearGradient>
+    <filter id="tk-dark-glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="2.6" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <rect x="0.75" y="0.75" width="98.5" height="98.5" rx="22.5" fill="url(#tk-dark-bg)" stroke="url(#tk-dark-rim)" stroke-width="1.5"/>
+  <rect x="2" y="2" width="96" height="96" rx="21" fill="url(#tk-dark-aura)"/>
+  <!-- Subtle precision titanium ring -->
+  <circle cx="50" cy="50" r="35.5" fill="none" stroke="#94A3B8" stroke-opacity="0.16" stroke-width="0.9"/>
+  <!-- Dual luminous synapse arcs -->
+  <path d="M23.5 38.5 A 29 29 0 0 1 68.5 27.5" fill="none" stroke="url(#tk-dark-arc-a)" stroke-width="3.6" stroke-linecap="round"/>
+  <path d="M76.5 61.5 A 29 29 0 0 1 31.5 72.5" fill="none" stroke="url(#tk-dark-arc-b)" stroke-width="3.6" stroke-linecap="round"/>
+  <!-- Twin orbital insight nodes -->
+  <circle cx="71.2" cy="29.4" r="3.4" fill="#C7D2FE"/>
+  <circle cx="71.2" cy="29.4" r="1.5" fill="#FFFFFF"/>
+  <circle cx="28.8" cy="70.6" r="3.4" fill="#7DD3FC"/>
+  <circle cx="28.8" cy="70.6" r="1.5" fill="#FFFFFF"/>
+  <!-- Glowing sculpted Thinking 4-point prism spark -->
+  <g filter="url(#tk-dark-glow)">
+    <path d="M50 25.5 C51.6 39.2 60.8 48.4 74.5 50 C60.8 51.6 51.6 60.8 50 74.5 C48.4 60.8 39.2 51.6 25.5 50 C39.2 48.4 48.4 39.2 50 25.5 Z" fill="url(#tk-dark-star)"/>
+  </g>
+  <!-- Crisp jewel core -->
+  <circle cx="50" cy="50" r="4.2" fill="#1E2340" stroke="#A5B4FC" stroke-opacity="0.45" stroke-width="0.9"/>
+  <circle cx="50" cy="50" r="2.1" fill="#FFFFFF"/>
+</svg>

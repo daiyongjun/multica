@@ -1,8 +1,8 @@
 "use client";
 
 import type { ComponentProps } from "react";
-import { Search, SquarePen } from "@multica/ui/icons";
 import { TooltipHint } from "@multica/ui/components/common/tooltip-hint";
+import { ThinkingComposeIcon, ThinkingSearchIcon } from "./thinking-rail-icons";
 import { useSearchStore } from "@multica/core/command-bar";
 import { openCreateIssueWithPreference } from "@multica/core/issues/stores";
 import { useIssueDraftStore } from "@multica/core/issues/stores/draft-store";
@@ -54,7 +54,7 @@ export function NewIssueButton({
         className={className}
       >
         <span className="relative flex">
-          <SquarePen />
+          <ThinkingComposeIcon />
           <DraftDot />
         </span>
       </button>
@@ -85,7 +85,7 @@ export function SearchButton({
         onClick={() => useSearchStore.getState().setOpen(true)}
         className={className}
       >
-        <Search />
+        <ThinkingSearchIcon />
       </button>
     </TooltipHint>
   );

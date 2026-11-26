@@ -13,7 +13,7 @@ import {
 import { restrictToFirstScrollableAncestor, restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { CheckCheck, ExternalLink, Link2, RotateCcw, Settings, Users, type IconComponent } from "@multica/ui/icons";
+import { CheckCheck, ExternalLink, Link2, RotateCcw, type IconComponent } from "@multica/ui/icons";
 import { toast } from "sonner";
 import { useChatStore } from "@multica/core/chat";
 import { useMarkAllChatSessionsRead } from "@multica/core/chat/mutations";
@@ -60,7 +60,14 @@ import { isPathWithin } from "./panel-nav";
 import { useTeamAgentStatus } from "./panels/team-status";
 import { RAIL_ICON_BUTTON_CLASS } from "./rail-styles";
 import { RailWorkspaces } from "./rail-workspaces";
-import { routeIconForPath } from "./route-icon-components";
+import {
+  ThinkingAutopilotIcon,
+  ThinkingChatIcon,
+  ThinkingDocsIcon,
+  ThinkingSettingsIcon,
+  ThinkingTeamIcon,
+  ThinkingWorkIcon,
+} from "./thinking-rail-icons";
 import { useDragClickGuard } from "./use-drag-click-guard";
 
 type RailBadge =
@@ -210,10 +217,15 @@ function RailSpaceLink({
       aria-current={active ? "page" : undefined}
       onContextMenu={openInNewTab ? rowMenu.openAtPointer : undefined}
       {...peekHandlers}
-      className="group relative grid size-10 place-items-center rounded-xl text-rail-item outline-none transition-colors hover:bg-rail-item-hover hover:text-rail-item-active-foreground focus-visible:outline-2 focus-visible:outline-ring aria-[current=page]:bg-rail-item-active aria-[current=page]:text-rail-item-active-foreground"
+      className="group relative grid size-10 place-items-center rounded-xl text-rail-item outline-none transition-all duration-150 hover:bg-rail-item-hover hover:text-rail-item-active-foreground focus-visible:outline-2 focus-visible:outline-ring aria-[current=page]:bg-white aria-[current=page]:text-foreground aria-[current=page]:shadow-[0_1px_4px_rgba(30,37,71,0.08),0_0_0_1px_rgba(79,70,229,0.14)] dark:aria-[current=page]:bg-white/[0.09] dark:aria-[current=page]:text-white dark:aria-[current=page]:shadow-[0_2px_10px_rgba(0,0,0,0.32),inset_0_1px_0_rgba(255,255,255,0.12),0_0_0_1px_rgba(129,140,248,0.22)]"
     >
-      <Icon className="size-5" aria-hidden="true" />
-      {active && <span aria-hidden className="absolute left-0 h-3 w-0.5 rounded-full bg-brand" />}
+      <Icon className="size-[21px] group-hover:scale-[1.04]" aria-hidden="true" />
+      {active && (
+        <span
+          aria-hidden
+          className="absolute left-0 h-4 w-[3px] rounded-r-full bg-gradient-to-b from-[#4F46E5] to-[#2563EB] dark:from-[#A5B4FC] dark:to-[#6366F1] dark:shadow-[0_0_8px_rgba(129,140,248,0.7)]"
+        />
+      )}
       {badge && <RailBadgeMark badge={badge} />}
     </AppLink>
   );
@@ -383,27 +395,27 @@ export function AppRail({
   const items: Record<RailSpaceId, { href: string; icon: IconComponent; fullLabel: string }> = {
     work: {
       href: p.issues(),
-      icon: routeIconForPath(p.issues()),
+      icon: ThinkingWorkIcon,
       fullLabel: t(($) => $.spaces.work),
     },
     docs: {
       href: p.docs(),
-      icon: routeIconForPath(p.docs()),
+      icon: ThinkingDocsIcon,
       fullLabel: t(($) => $.nav.docs),
     },
     team: {
       href: p.agents(),
-      icon: Users,
+      icon: ThinkingTeamIcon,
       fullLabel: t(($) => $.spaces.team),
     },
     chat: {
       href: p.chat(),
-      icon: routeIconForPath(p.chat()),
+      icon: ThinkingChatIcon,
       fullLabel: t(($) => $.nav.chat),
     },
     autopilots: {
       href: p.autopilots(),
-      icon: routeIconForPath(p.autopilots()),
+      icon: ThinkingAutopilotIcon,
       fullLabel: t(($) => $.nav.autopilots),
     },
   };
@@ -467,7 +479,7 @@ export function AppRail({
             {...settingsPeek}
             className={RAIL_ICON_BUTTON_CLASS}
           >
-            <Settings />
+            <ThinkingSettingsIcon />
           </AppLink>
         </TooltipHint>
         <AccountMenu />

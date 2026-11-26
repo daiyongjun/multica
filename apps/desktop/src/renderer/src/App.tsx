@@ -8,7 +8,7 @@ import { useWorkspaceList } from "@multica/core/workspace";
 import { api } from "@multica/core/api";
 import { useHasOnboarded } from "@multica/core/paths";
 import { setCurrentWorkspace } from "@multica/core/platform";
-import { ThemeProvider } from "@multica/ui/components/common/theme-provider";
+import { ThemeProvider, useTheme } from "@multica/ui/components/common/theme-provider";
 import { MulticaIcon } from "@multica/ui/components/common/multica-icon";
 import { Toaster } from "@multica/ui/components/ui/sonner";
 import { DesktopLoginPage } from "./pages/login";
@@ -406,6 +406,16 @@ function handleSessionExpired() {
   tearDownOnSessionExpiry(sessionTeardown);
 }
 
+function DesktopDockAppearanceSync() {
+  const { resolvedTheme } = useTheme();
+  useEffect(() => {
+    if (resolvedTheme === "light" || resolvedTheme === "dark") {
+      window.desktopAPI.setAppearance?.(resolvedTheme);
+    }
+  }, [resolvedTheme]);
+  return null;
+}
+
 export default function App() {
   const { version, os } = window.desktopAPI.appInfo;
   const systemLocale = window.desktopAPI.systemLocale;
@@ -485,6 +495,7 @@ export default function App() {
 
   return (
     <ThemeProvider>
+      <DesktopDockAppearanceSync />
       <AppearanceSync />
       {runtimeConfigResult.ok ? (
         <CoreProvider

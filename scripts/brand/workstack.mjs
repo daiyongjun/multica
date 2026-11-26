@@ -1,33 +1,16 @@
 import { chromium } from "@playwright/test";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { execFileSync } from "node:child_process";
-import { workstackIconSvg } from "../../packages/ui/lib/workstack-brand.ts";
+import { thinkingIconSvg } from "../../packages/ui/lib/workstack-brand.ts";
 
 const root = fileURLToPath(new URL("../../", import.meta.url));
 const browser = await chromium.launch({ channel: process.env.BRAND_BROWSER_CHANNEL || "chrome" });
-try {
-  const page = await browser.newPage({ deviceScaleFactor: 1 });
-  async function png(relative, size, margin = 0) {
-    const path = join(root, relative);
-    await mkdir(dirname(path), { recursive: true });
-    await page.setViewportSize({ width: size, height: size });
-    await page.setContent(`<style>*{margin:0}body{background:transparent;padding:${margin}px}svg{display:block}</style>${workstackIconSvg(size - margin * 2)}`);
-    await page.screenshot({ path, omitBackground: true });
-  }
-  await writeFile(join(root, "apps/web/public/workstack.svg"), workstackIconSvg() + "\n");
-  for (const size of [16, 24, 32, 48, 64, 128, 256, 512, 1024]) {
-    await png(`apps/desktop/build/icons/${size}x${size}.png`, size, Math.round(size * 0.1));
-  }
-  for (const path of ["apps/desktop/build/icon.png", "apps/desktop/resources/icon.png"]) await png(path, 1024, 100);
-  for (const [name, size] of [["icon-192", 192], ["icon-512", 512], ["apple-touch-icon", 180], ["icon-maskable-512", 512]]) {
-    await png(`apps/web/public/icons/${name}.png`, size);
-  }
+
+async function buildIcns(sizePngPaths) {
   const icnsEntries = await Promise.all(
-    [[32, "icp5"], [64, "icp6"], [128, "ic07"], [256, "ic08"], [512, "ic09"], [1024, "ic10"]].map(async ([size, type]) => {
-      const image = await readFile(join(root, `apps/desktop/build/icons/${size}x${size}.png`));
+    sizePngPaths.map(async ([type, path]) => {
+      const image = await readFile(path);
       const header = Buffer.alloc(8);
       header.write(type);
       header.writeUInt32BE(image.length + header.length, 4);
@@ -37,9 +20,80 @@ try {
   const icnsHeader = Buffer.alloc(8);
   icnsHeader.write("icns");
   icnsHeader.writeUInt32BE(8 + icnsEntries.reduce((length, entry) => length + entry.length, 0), 4);
-  await writeFile(join(root, "apps/desktop/build/icon.icns"), Buffer.concat([icnsHeader, ...icnsEntries]));
+  return Buffer.concat([icnsHeader, ...icnsEntries]);
+}
+
+try {
+  const page = await browser.newPage({ deviceScaleFactor: 1 });
+  async function png(relative, size, variant = "dark", margin = 0) {
+    const path = join(root, relative);
+    await mkdir(dirname(path), { recursive: true });
+    await page.setViewportSize({ width: size, height: size });
+    const shadow =
+      variant === "light"
+        ? "filter:drop-shadow(0 12px 22px rgba(30,37,71,0.18))"
+        : "filter:drop-shadow(0 14px 24px rgba(0,0,0,0.42))";
+    await page.setContent(
+      `<style>*{margin:0}body{background:transparent;padding:${margin}px}svg{display:block;${margin > 0 ? shadow : ""}}</style>${thinkingIconSvg(size - margin * 2, variant)}`,
+    );
+    await page.screenshot({ path, omitBackground: true });
+  }
+
+  // Export vector brand marks (light & dark)
+  await writeFile(join(root, "apps/web/public/workstack.svg"), thinkingIconSvg(100, "dark") + "\n");
+  await writeFile(join(root, "apps/web/public/thinking-dark.svg"), thinkingIconSvg(100, "dark") + "\n");
+  await writeFile(join(root, "apps/web/public/thinking-light.svg"), thinkingIconSvg(100, "light") + "\n");
+
+  // Render full hicolor set (dark flagship default + light variant for icns)
+  for (const size of [16, 24, 32, 48, 64, 128, 256, 512, 1024]) {
+    const margin = Math.round(size * 0.1);
+    await png(`apps/desktop/build/icons/${size}x${size}.png`, size, "dark", margin);
+    if ([32, 64, 128, 256, 512, 1024].includes(size)) {
+      await png(`apps/desktop/build/icons-light/${size}x${size}.png`, size, "light", margin);
+    }
+  }
+
+  // High-res macOS Dock & build icons (both Light & Dark bundled into resources/)
+  await png("apps/desktop/build/icon.png", 1024, "dark", 100);
+  await png("apps/desktop/build/icon-dark.png", 1024, "dark", 100);
+  await png("apps/desktop/build/icon-light.png", 1024, "light", 100);
+  await png("apps/desktop/resources/icon.png", 1024, "dark", 100);
+  await png("apps/desktop/resources/icon-dark.png", 1024, "dark", 100);
+  await png("apps/desktop/resources/icon-light.png", 1024, "light", 100);
+
+  // Web PWA icons
+  for (const [name, size] of [
+    ["icon-192", 192],
+    ["icon-512", 512],
+    ["apple-touch-icon", 180],
+    ["icon-maskable-512", 512],
+  ]) {
+    await png(`apps/web/public/icons/${name}.png`, size, "dark");
+  }
+
+  const icnsMap = [
+    ["icp5", 32],
+    ["icp6", 64],
+    ["ic07", 128],
+    ["ic08", 256],
+    ["ic09", 512],
+    ["ic10", 1024],
+  ];
+
+  // Build dark flagship icon.icns + icon-dark.icns + icon-light.icns
+  const darkIcns = await buildIcns(
+    icnsMap.map(([type, size]) => [type, join(root, `apps/desktop/build/icons/${size}x${size}.png`)]),
+  );
+  const lightIcns = await buildIcns(
+    icnsMap.map(([type, size]) => [type, join(root, `apps/desktop/build/icons-light/${size}x${size}.png`)]),
+  );
+  await writeFile(join(root, "apps/desktop/build/icon.icns"), darkIcns);
+  await writeFile(join(root, "apps/desktop/build/icon-dark.icns"), darkIcns);
+  await writeFile(join(root, "apps/desktop/build/icon-light.icns"), lightIcns);
+
+  // Build Windows icon.ico
   const sizes = [16, 24, 32, 48, 64, 128, 256];
-  const images = await Promise.all(sizes.map(size => readFile(join(root, `apps/desktop/build/icons/${size}x${size}.png`))));
+  const images = await Promise.all(sizes.map((size) => readFile(join(root, `apps/desktop/build/icons/${size}x${size}.png`))));
   const directory = Buffer.alloc(6 + sizes.length * 16);
   directory.writeUInt16LE(1, 2);
   directory.writeUInt16LE(sizes.length, 4);
@@ -54,7 +108,7 @@ try {
     offset += image.length;
   });
   await writeFile(join(root, "apps/desktop/build/icon.ico"), Buffer.concat([directory, ...images]));
-  console.log("Generated Think desktop and web icons.");
+  console.log("Generated Thinking Light + Dark desktop and web icons.");
 } finally {
   await browser.close();
 }

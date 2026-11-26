@@ -168,6 +168,10 @@ const desktopAPI = {
   setLocale: (locale: string) => {
     ipcRenderer.send("locale:set", locale);
   },
+  /** Report the resolved light/dark theme so the macOS Dock icon follows it. */
+  setAppearance: (mode: "light" | "dark") => {
+    ipcRenderer.send("theme:set-appearance", mode);
+  },
   /** Subscribe to OS language changes detected after boot. The renderer
    *  decides whether to act (no-op when the user has an explicit Settings
    *  choice). Returns an unsubscribe function. */

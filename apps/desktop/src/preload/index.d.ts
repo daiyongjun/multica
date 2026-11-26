@@ -49,6 +49,8 @@ interface DesktopAPI {
   systemLocale: string;
   /** Report the resolved in-app locale to main for native dialogs and daemon errors. */
   setLocale?: (locale: string) => void;
+  /** Report the resolved light/dark theme so the macOS Dock icon follows it. */
+  setAppearance?: (mode: "light" | "dark") => void;
   /** Subscribe to OS language changes detected after boot. Returns an unsubscribe function. */
   onSystemLocaleChanged: (callback: (locale: string) => void) => () => void;
   /** Validated runtime endpoint config, or a blocking config error. */
