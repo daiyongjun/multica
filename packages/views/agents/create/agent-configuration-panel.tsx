@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Sparkles } from "@multica/ui/icons";
 import {useQuery} from "@tanstack/react-query";
 import {runtimeModelsOptions} from "@multica/core/runtimes";
 import {findModelCapabilityEntry,thinkingLevelRequiredForProvider} from "../components/inspector/model-capability";
@@ -35,6 +36,10 @@ import { QoderAgentSelect } from "../components/qoder-agent-select";
 import { RuntimePicker } from "../components/runtime-picker";
 import { SkillMultiSelect } from "../components/skill-multi-select";
 import { ConversationStartersEditor } from "../components/conversation-starters-editor";
+import {
+  AgentNameSuggestionCard,
+  AgentNamingToolModal,
+} from "./agent-name-picker";
 
 const PERMISSION_SCOPES: AgentPermissionScope[] = [
   "private",
@@ -417,6 +422,9 @@ export function AgentNameField({
   const { t } = useT("agents");
   const errorId = "agent-create-name-error";
   const inputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [namingToolOpen, setNamingToolOpen] = useState(false);
 
   useEffect(() => {
     if (!error) return;
@@ -424,30 +432,84 @@ export function AgentNameField({
     inputRef.current?.select();
   }, [error]);
 
+  useEffect(() => {
+    if (!pickerOpen) return;
+    const onPointerDown = (event: MouseEvent) => {
+      if (containerRef.current?.contains(event.target as Node)) return;
+      setPickerOpen(false);
+    };
+    document.addEventListener("mousedown", onPointerDown);
+    return () => document.removeEventListener("mousedown", onPointerDown);
+  }, [pickerOpen]);
+
   return (
     <DraftFieldRow
       compact={compact}
+      align="start"
       label={t(($) => $.create_dialog.name_label)}
       htmlFor="agent-create-name"
     >
-      <div className="space-y-1.5">
-        <Input
-          ref={inputRef}
-          id="agent-create-name"
-          name="agent-name"
-          autoComplete="off"
-          aria-label={t(($) => $.create_dialog.name_label)}
-          aria-invalid={!!error}
-          aria-describedby={error ? errorId : undefined}
-          value={name}
-          onChange={(event) => onChange(event.target.value)}
-          placeholder={t(($) => $.create_dialog.name_placeholder)}
-        />
+      <div ref={containerRef} className="space-y-1.5">
+        <div className="relative flex items-center gap-2">
+          <Input
+            ref={inputRef}
+            id="agent-create-name"
+            name="agent-name"
+            autoComplete="off"
+            aria-label={t(($) => $.create_dialog.name_label)}
+            aria-invalid={!!error}
+            aria-describedby={error ? errorId : undefined}
+            value={name}
+            onFocus={() => setPickerOpen(true)}
+            onClick={() => setPickerOpen(true)}
+            onKeyDown={(event) => {
+              if (event.key === "Escape") setPickerOpen(false);
+            }}
+            onChange={(event) => onChange(event.target.value)}
+            placeholder={t(($) => $.create_dialog.name_placeholder)}
+            className="pr-24"
+          />
+          <button
+            type="button"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => {
+              setPickerOpen(false);
+              setNamingToolOpen(true);
+            }}
+            aria-label="打开内置取名工具"
+            className="absolute right-1.5 inline-flex h-7 cursor-pointer items-center gap-1 rounded-md border border-surface-border bg-surface-raised px-2 text-caption font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            <Sparkles className="size-3" />
+            <span>取名工具</span>
+          </button>
+        </div>
         {error ? (
           <p id={errorId} className="text-caption text-destructive">
             {error}
           </p>
         ) : null}
+        {pickerOpen ? (
+          <AgentNameSuggestionCard
+            currentName={name}
+            onSelectName={(picked) => {
+              onChange(picked);
+              setPickerOpen(false);
+            }}
+            onOpenNamingTool={() => {
+              setPickerOpen(false);
+              setNamingToolOpen(true);
+            }}
+          />
+        ) : null}
+        <AgentNamingToolModal
+          open={namingToolOpen}
+          onOpenChange={setNamingToolOpen}
+          initialName={name}
+          onApplyName={(picked) => {
+            onChange(picked);
+            setPickerOpen(false);
+          }}
+        />
       </div>
     </DraftFieldRow>
   );
