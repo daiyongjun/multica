@@ -217,13 +217,13 @@ function RailSpaceLink({
       aria-current={active ? "page" : undefined}
       onContextMenu={openInNewTab ? rowMenu.openAtPointer : undefined}
       {...peekHandlers}
-      className="group relative grid size-10 place-items-center rounded-xl text-rail-item outline-none transition-all duration-150 hover:bg-rail-item-hover hover:text-rail-item-active-foreground focus-visible:outline-2 focus-visible:outline-ring aria-[current=page]:bg-white aria-[current=page]:text-foreground aria-[current=page]:shadow-[0_1px_4px_rgba(30,37,71,0.08),0_0_0_1px_rgba(79,70,229,0.14)] dark:aria-[current=page]:bg-white/[0.09] dark:aria-[current=page]:text-white dark:aria-[current=page]:shadow-[0_2px_10px_rgba(0,0,0,0.32),inset_0_1px_0_rgba(255,255,255,0.12),0_0_0_1px_rgba(129,140,248,0.22)]"
+      className="group relative grid size-10 place-items-center rounded-xl text-rail-item outline-none transition-all duration-150 hover:bg-rail-item-hover hover:text-rail-item-active-foreground focus-visible:outline-2 focus-visible:outline-ring aria-[current=page]:bg-white aria-[current=page]:text-[#111319] aria-[current=page]:shadow-[0_1px_4px_rgba(15,23,42,0.08),0_0_0_1px_rgba(15,23,42,0.09)] dark:aria-[current=page]:bg-white/[0.1] dark:aria-[current=page]:text-white dark:aria-[current=page]:shadow-[0_2px_10px_rgba(0,0,0,0.34),inset_0_1px_0_rgba(255,255,255,0.14),0_0_0_1px_rgba(255,255,255,0.12)]"
     >
       <Icon className="size-[21px] group-hover:scale-[1.04]" aria-hidden="true" />
       {active && (
         <span
           aria-hidden
-          className="absolute left-0 h-4 w-[3px] rounded-r-full bg-gradient-to-b from-[#4F46E5] to-[#2563EB] dark:from-[#A5B4FC] dark:to-[#6366F1] dark:shadow-[0_0_8px_rgba(129,140,248,0.7)]"
+          className="absolute left-0 h-4 w-[3px] rounded-r-full bg-[#14161F] dark:bg-white"
         />
       )}
       {badge && <RailBadgeMark badge={badge} />}

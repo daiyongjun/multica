@@ -177,7 +177,7 @@ export function RailWorkspaces() {
               name={current.name}
               avatarUrl={current.avatar_url}
               radius="lg"
-              className="h-[36px] w-[36px] border border-[#D4DCF0] bg-gradient-to-b from-white via-[#F6F8FD] to-[#EAEFF9] text-[15px] leading-none font-semibold text-[#1E2547] shadow-[0_2px_6px_rgba(30,37,71,0.09),inset_0_1px_0_rgba(255,255,255,0.95)] antialiased transition-all duration-150 hover:border-[#818CF8]/60 hover:shadow-[0_3px_10px_rgba(79,70,229,0.16)] dark:border-white/15 dark:from-[#23273B] dark:via-[#171A28] dark:to-[#10121D] dark:text-[#F1F5F9] dark:shadow-[0_2px_10px_rgba(0,0,0,0.42),inset_0_1px_0_rgba(255,255,255,0.14)] dark:hover:border-[#818CF8]/45"
+              className="h-[36px] w-[36px] border border-[#D4D8E2] bg-gradient-to-b from-white via-[#F6F7FA] to-[#EAECEF] text-[15px] leading-none font-semibold text-[#14161F] shadow-[0_2px_6px_rgba(15,23,42,0.08),inset_0_1px_0_rgba(255,255,255,0.95)] antialiased transition-all duration-150 hover:border-[#9CA3AF] hover:shadow-[0_3px_10px_rgba(15,23,42,0.12)] dark:border-white/15 dark:from-[#222530] dark:via-[#15171F] dark:to-[#0C0D12] dark:text-[#F8FAFC] dark:shadow-[0_2px_10px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.14)] dark:hover:border-white/30"
             />
             {(otherUnread || invitations.length > 0) && (
               <UnreadDot className="absolute -top-0.5 -right-0.5 ring-2 ring-app-shell" />
